@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { PaneDock } from '@/components/layout/PaneDock'
 import { Button } from '@/components/ui/Button'
 import { StageTabs } from '@/components/orders/StageTabs'
 import { SavedViews } from '@/components/orders/SavedViews'
@@ -9,7 +10,7 @@ import type { Filters } from '@/components/orders/OrdersToolbar'
 import { OrdersTable } from '@/components/orders/OrdersTable'
 import { BulkActionBar } from '@/components/orders/BulkActionBar'
 import { UndoToast } from '@/components/orders/UndoToast'
-import { OrderDetailsModal } from '@/components/orders/OrderDetailsModal'
+import { OrderDetailsPanel } from '@/components/orders/OrderDetailsPanel'
 import {
   LANES,
   buildSkuIndex,
@@ -329,30 +330,32 @@ export default function Orders() {
         onAssign={assign}
       />
 
-      {/* Leaves room for the bulk bar so it never covers the last row. */}
-      <div className="h-16" />
+      {/* Leaves room for the docked bar so it never covers the last row. */}
+      {selectedIds.length > 0 && <div className="h-14" />}
 
-      <BulkActionBar
-        count={selectedIds.length}
-        totalInStage={visible.length}
-        lane={lane}
-        users={workers}
-        onStatus={bulkStatus}
-        onAssign={bulkAssign}
-        onSelectAll={selectAll}
-        onClear={clearSelection}
-      />
-
-      {/* Never both at once: clearing the selection retires the bar first. */}
-      {selectedIds.length === 0 && (
-        <UndoToast
-          message={undo?.message ?? null}
-          onUndo={runUndo}
-          onDismiss={() => setUndo(null)}
+      <PaneDock>
+        <BulkActionBar
+          count={selectedIds.length}
+          totalInStage={visible.length}
+          lane={lane}
+          users={workers}
+          onStatus={bulkStatus}
+          onAssign={bulkAssign}
+          onSelectAll={selectAll}
+          onClear={clearSelection}
         />
-      )}
 
-      <OrderDetailsModal
+        {/* Never both at once: clearing the selection retires the bar first. */}
+        {selectedIds.length === 0 && (
+          <UndoToast
+            message={undo?.message ?? null}
+            onUndo={runUndo}
+            onDismiss={() => setUndo(null)}
+          />
+        )}
+      </PaneDock>
+
+      <OrderDetailsPanel
         order={openOrder}
         users={workers}
         skus={skus}

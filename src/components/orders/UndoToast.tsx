@@ -24,7 +24,7 @@ export function UndoToast({
   if (!message) return null
 
   return (
-    <div className="pointer-events-none fixed bottom-6 left-60 z-50 flex w-[calc(100%-15rem)] justify-center px-8">
+    <div className="flex justify-center px-8 pb-5">
       <div
         role="status"
         aria-live="polite"

@@ -133,6 +133,12 @@
   }
 }
 
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+
 @layer base {
   * {
     border-color: var(--color-hairline);

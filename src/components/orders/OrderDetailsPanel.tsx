@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Modal } from '@/components/ui/Modal'
+import { SidePanel } from '@/components/ui/SidePanel'
 import { Button } from '@/components/ui/Button'
 import { Label, Select, Textarea } from '@/components/ui/Field'
 import { Mono, DueCell, PriorityPill, StockIndicator } from './cells'
@@ -11,7 +11,7 @@ import type { Order, OrderStatus, User } from '@/lib/types'
 
 /* Detail and notes, not the only way to move an order forward. Status still
    lives here, but the row and the bulk bar are the fast paths. */
-export function OrderDetailsModal({
+export function OrderDetailsPanel({
   order,
   users,
   skus,
@@ -42,11 +42,10 @@ export function OrderDetailsModal({
   const due = dueLabel(order, now)
 
   return (
-    <Modal
+    <SidePanel
       open
       onClose={onClose}
       title={order.customer}
-      width="max-w-3xl"
       eyebrow={
         <>
           <Mono className="text-ink-secondary">{order.id}</Mono>
@@ -72,13 +71,14 @@ export function OrderDetailsModal({
       }
     >
       <div className="space-y-6">
-        <div className="rounded-lg border border-hairline bg-surface-sunken px-5 py-4">
+        <div className="rounded-lg border border-hairline bg-surface-sunken px-4 py-4">
           <StatusTimeline status={order.status} onChange={(next) => onStatus(order.id, next)} />
         </div>
 
-        <div className="grid grid-cols-2 gap-x-8 gap-y-5 sm:grid-cols-4">
+        {/* Two columns, not four: the panel is narrower than the modal was. */}
+        <div className="grid grid-cols-2 gap-x-6 gap-y-5">
           <div>
-            <Label>Due</Label>
+            <Label>Ship by</Label>
             <DueCell due={due} />
           </div>
           <div>
@@ -112,7 +112,7 @@ export function OrderDetailsModal({
 
         <div>
           <Label>Order items</Label>
-          <div className="rounded-table border border-hairline px-4 py-2">
+          <div className="overflow-x-auto rounded-table border border-hairline px-4 py-2">
             <LineStockTable lines={stock.lines} />
           </div>
         </div>
@@ -121,13 +121,13 @@ export function OrderDetailsModal({
           <Label htmlFor="notes">Notes and special instructions</Label>
           <Textarea
             id="notes"
-            rows={3}
+            rows={4}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Dock times, packing requirements, anything the picker should know..."
+            placeholder="Gift notes, delivery instructions, anything the packer should know..."
           />
         </div>
       </div>
-    </Modal>
+    </SidePanel>
   )
 }

@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { cn } from '@/lib/cn'
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'inverse' | 'ghost-inverse'
 type Size = 'sm' | 'md'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -17,6 +17,9 @@ const variants: Record<Variant, string> = {
     'bg-surface text-ink ring-1 ring-hairline hover:bg-surface-sunken active:bg-neutral-fill shadow-xs',
   ghost: 'text-ink-secondary hover:bg-neutral-fill hover:text-ink',
   danger: 'text-danger-text hover:bg-danger-fill',
+  // For dark surfaces, where oxblood on plum would have nothing to say.
+  inverse: 'bg-white text-ink hover:bg-white/90 active:bg-white/80',
+  'ghost-inverse': 'text-white/75 hover:bg-white/10 hover:text-white',
 }
 
 const sizes: Record<Size, string> = {

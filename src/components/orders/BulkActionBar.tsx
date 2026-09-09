@@ -49,7 +49,7 @@ export function BulkActionBar({
     completed: { label: 'Complete', icon: <Check size={14} /> },
   }
 
-  function renderAction(action: BulkAction, variant: 'primary' | 'ghost') {
+  function renderAction(action: BulkAction, variant: 'inverse' | 'ghost-inverse') {
     if (action === 'assign') {
       return (
         <Menu
@@ -84,39 +84,38 @@ export function BulkActionBar({
   }
 
   return (
-    <div className="pointer-events-none fixed bottom-6 left-60 z-40 flex w-[calc(100%-15rem)] justify-center px-8">
-      <div
-        role="region"
-        aria-label="Bulk actions"
-        className="pointer-events-auto flex items-center gap-1.5 rounded-full border border-hairline bg-surface py-2 pr-2 pl-4 shadow-lg motion-safe:animate-[lift_160ms_ease-out]"
-      >
-        <p
-          aria-live="polite"
-          className="tnum mr-1 text-[13px] font-medium whitespace-nowrap text-ink"
+    <div
+      role="region"
+      aria-label="Bulk actions"
+      className="pointer-events-auto flex items-center gap-2 bg-ink px-8 py-3 motion-safe:animate-[lift_160ms_ease-out]"
+    >
+      <p aria-live="polite" className="tnum text-[13px] font-medium whitespace-nowrap text-white">
+        {count} selected
+      </p>
+
+      {/* Only offered when it would actually change the selection. */}
+      {count < totalInStage && (
+        <button
+          onClick={onSelectAll}
+          className="tnum rounded px-1.5 py-0.5 text-[12.5px] whitespace-nowrap text-white/70 transition-colors hover:bg-white/10 hover:text-white"
         >
-          {count} selected
-        </p>
+          Select all {totalInStage}
+        </button>
+      )}
 
-        {/* Only offered when it would actually change the selection. */}
-        {count < totalInStage && (
-          <button
-            onClick={onSelectAll}
-            className="tnum mr-1 rounded-full px-1.5 py-0.5 text-[12.5px] whitespace-nowrap text-brand transition-colors hover:bg-brand/10"
-          >
-            Select all {totalInStage}
-          </button>
-        )}
+      {/* Actions sit at the far end, away from the count, so the bar reads
+          left to right as "this much selected, now do this". */}
+      <div className="ml-auto flex items-center gap-1.5">
+        {secondary.map((action) => renderAction(action, 'ghost-inverse'))}
+        {primary && renderAction(primary, 'inverse')}
 
-        <span className="mr-1 h-5 w-px bg-hairline" />
-
-        {primary && renderAction(primary, 'primary')}
-        {secondary.map((action) => renderAction(action, 'ghost'))}
+        <span className="mx-1 h-5 w-px bg-white/15" />
 
         <button
           type="button"
           onClick={onClear}
           aria-label="Clear selection"
-          className="ml-0.5 grid size-7 place-items-center rounded-full text-ink-muted transition-colors hover:bg-neutral-fill hover:text-ink"
+          className="grid size-7 place-items-center rounded-md text-white/50 transition-colors hover:bg-white/10 hover:text-white"
         >
           <X size={15} />
         </button>

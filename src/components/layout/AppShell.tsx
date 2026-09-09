@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { PANE_DOCK_ID } from './PaneDock'
 import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
 import { TopBarSearchProvider } from '@/lib/topbarSearch'
@@ -16,8 +17,17 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Sidebar />
 
           <main className="min-w-0 flex-1 pr-3 pb-3">
-            <div className="shadow-pane h-full overflow-y-auto rounded-shell bg-surface ring-1 ring-hairline/70">
-              <div className="mx-auto max-w-[1400px] px-8 py-7">{children}</div>
+            <div className="relative h-full">
+              <div className="shadow-pane h-full overflow-y-auto rounded-shell bg-surface ring-1 ring-hairline/70">
+                <div className="mx-auto max-w-[1400px] px-8 py-7">{children}</div>
+              </div>
+
+              {/* Outside the scroll container so docked bars stay put, inside
+                  the pane's corners so they read as part of the page. */}
+              <div
+                id={PANE_DOCK_ID}
+                className="pointer-events-none absolute inset-x-0 bottom-0 z-30 overflow-hidden rounded-b-shell"
+              />
             </div>
           </main>
         </div>
