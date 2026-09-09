@@ -12,19 +12,6 @@ export type LaneId =
   | 'ready_to_ship'
   | 'completed'
 
-/** A stage plus a filter combination, saved under a name by the user. */
-export interface SavedView {
-  id: string
-  name: string
-  lane: LaneId
-  filters: {
-    search: string
-    status: OrderStatus | ''
-    priority: Priority | ''
-    assignee: string
-  }
-}
-
 /** Worst-case stock state across an order's line items. */
 export type Fulfillment = 'ok' | 'low' | 'out'
 

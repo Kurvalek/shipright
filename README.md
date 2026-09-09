@@ -15,8 +15,6 @@ Other scripts: `npm run build`, `npm run preview`, `npm run typecheck`.
 
 **Five stage tabs replace the flat pile.** The list is split along the path an order actually takes across the floor, each tab carrying a live count: Needs attention, New / unassigned, Ready to pack, Ready to ship, Completed. The default lands on Needs attention rather than "250 of 250" in no particular order. Needs attention is the only tab that cuts across stages — it collects anything overdue or blocked by stock, the orders that will not move on their own.
 
-**Saved views.** The tabs are structure; saved views are personal. Any stage plus filter combination can be named and kept, and it is still there after a reload — so "New + Rush" is one chip instead of a combination retyped twenty times a day. Two are seeded to make the feature legible on first run.
-
 **Checkboxes and a bulk action bar.** Select rows and a contextual bar rises from the bottom. The move a stage exists to perform is promoted to the primary button and moves that make no sense there are not offered, so a packed order is never invited to be packed again. When only part of a stage is selected the bar offers to take the rest, which is what makes `Ready to ship · 84 → Select all → Mark shipped` three clicks instead of 84 modals.
 
 **Undo on bulk actions.** Moving 84 orders in one click is only comfortable if it is reversible, so every bulk action reports what it did in plain terms and holds an undo open for eight seconds.
@@ -24,6 +22,8 @@ Other scripts: `npm run build`, `npm run preview`, `npm run typecheck`.
 **Inline stock and a can-fulfill signal.** A per-row indicator answers whether the order can actually ship: green when every line is covered, amber when filling it drops a SKU to or below its reorder point, red when there is not enough on the shelf. Expanding a row shows each SKU with required against on-hand, its bin, and its own flag. The data already lived on the Inventory screen; this joins it onto the order.
 
 **Visible urgency.** The Ship by column reads as relative urgency rather than a raw timestamp, and the page header states the pressure as a number — how many in this stage are overdue, and how many are due today.
+
+**Status reads as progress, not a label.** The Status column is a five-segment step bar with the stage named underneath, so how far along an order is comes across without the reader having memorised the order of the stages. Priority is a coloured rule and a word rather than a filled chip, weighted so Rush is the only one that carries across a full table and Standard stays quiet.
 
 **The next step is always named.** Hovering a row reveals the single most likely next step for that order's state, and the detail panel spells the same move out as its own button — Mark as packed, Mark as shipped — so advancing one order never depends on discovering that the timeline circles are clickable. The timeline stays for reading progress and for correcting a move made too early, which a forward-only button cannot express.
 
@@ -50,7 +50,7 @@ Every attribute is an exact count rather than a probability, so the numbers on t
 The split on persistence is deliberate:
 
 - **Order and inventory edits live in React state** and reset on refresh. It is a prototype, and a resettable demo is more useful than a stateful one.
-- **View state persists to `localStorage`** — the selected stage, saved views, filters, and Settings tab. Re-picking your stage and re-typing your filters on every reload is exactly the friction this redesign removes, so that part survives.
+- **View state persists to `localStorage`** — the selected stage, filters, and Settings tab. Re-picking your stage and re-typing your filters on every reload is exactly the friction this redesign removes, so that part survives.
 
 ## Layout
 
@@ -60,7 +60,7 @@ src/
   components/
     ui/         Button, Pill, Checkbox, Field, Toggle, Card, Modal, SidePanel, Menu, Avatar, EmptyState
     layout/     AppShell, TopBar, Sidebar, PageHeader, Logo
-    orders/     stage tabs, saved views, toolbar, table, row, expansion, bulk bar, undo toast, detail panel
+    orders/     stage tabs, toolbar, table, row, expansion, bulk bar, undo toast, detail panel
     inventory/  stat cards, edit modal
     settings/   the four tab panels
   pages/        Orders, Inventory, Settings

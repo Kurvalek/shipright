@@ -177,13 +177,12 @@ await capture('04-ready-to-ship-all-selected')
 await clickText('button', 'Mark shipped', BULK_BAR)
 await capture('05-ready-to-ship-shipped-with-undo')
 
-/* Scenario two: hand 52 rush orders to one worker from a saved view. */
+/* Scenario two: hand 52 rush orders to one worker in one action. */
 await goto('/orders')
-await setView('orders.lane', 'needs_attention')
-await setView('orders.filters', NO_FILTERS)
+await setView('orders.lane', 'new_unassigned')
+await setView('orders.filters', { ...NO_FILTERS, priority: 'rush' })
 await goto('/orders')
-await clickText('span button', 'New \u00b7 Rush')
-await capture('06-saved-view-new-rush')
+await capture('06-new-unassigned-rush')
 
 await selectAll()
 await clickText('button', 'Assign to', BULK_BAR)

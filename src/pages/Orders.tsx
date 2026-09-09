@@ -4,7 +4,6 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { PaneDock } from '@/components/layout/PaneDock'
 import { Button } from '@/components/ui/Button'
 import { StageTabs } from '@/components/orders/StageTabs'
-import { SavedViews } from '@/components/orders/SavedViews'
 import { OrdersToolbar } from '@/components/orders/OrdersToolbar'
 import type { Filters } from '@/components/orders/OrdersToolbar'
 import { OrdersTable } from '@/components/orders/OrdersTable'
@@ -23,28 +22,11 @@ import {
 import { useStore } from '@/lib/store'
 import { useTopBarSearch } from '@/lib/topbarSearch'
 import { usePersistentState } from '@/lib/usePersistentState'
-import type { LaneId, Order, OrderStatus, SavedView } from '@/lib/types'
+import type { LaneId, Order, OrderStatus } from '@/lib/types'
 
 const NO_FILTERS: Filters = { search: '', status: '', priority: '', assignee: '' }
 
 const DEFAULT_LANE: LaneId = 'needs_attention'
-
-/* Seeded so the feature is legible on first run, and because "New + Rush" is
-   exactly the combination that gets retyped twenty times a day. */
-const SEED_VIEWS: SavedView[] = [
-  {
-    id: 'view-new-rush',
-    name: 'New · Rush',
-    lane: 'new_unassigned',
-    filters: { search: '', status: '', priority: 'rush', assignee: '' },
-  },
-  {
-    id: 'view-rush-outbound',
-    name: 'Rush · outbound',
-    lane: 'ready_to_ship',
-    filters: { search: '', status: '', priority: 'rush', assignee: '' },
-  },
-]
 
 const DATE = new Intl.DateTimeFormat('en-US', {
   weekday: 'long',
@@ -64,11 +46,10 @@ function sameFilters(a: Filters, b: Filters): boolean {
 export default function Orders() {
   const { orders, inventory, users, workers, setStatus, assign, restore, setNotes } = useStore()
 
-  // Stage, filters and saved views persist. Selection and expansion are
-  // per-session, because they describe a task in progress, not a preference.
+  // Stage and filters persist. Selection and expansion are per-session,
+  // because they describe a task in progress, not a preference.
   const [storedLane, setLane] = usePersistentState<LaneId>('orders.lane', DEFAULT_LANE)
   const [filters, setFilters] = usePersistentState<Filters>('orders.filters', NO_FILTERS)
-  const [views, setViews] = usePersistentState<SavedView[]>('orders.views', SEED_VIEWS)
 
   // Guards against a stage name persisted by an older build.
   const lane = LANES.some((l) => l.id === storedLane) ? storedLane : DEFAULT_LANE
@@ -151,37 +132,7 @@ export default function Orders() {
     [setLane, clearSelection],
   )
 
-  const activeViewId = useMemo(() => {
-    const match = views.find((view) => view.lane === lane && sameFilters(view.filters, filters))
-    return match?.id ?? null
-  }, [views, lane, filters])
-
   const isFiltered = !sameFilters(filters, NO_FILTERS)
-
-  const applyView = useCallback(
-    (view: SavedView) => {
-      setLane(view.lane)
-      setFilters(view.filters)
-      clearSelection()
-      setExpandedId(null)
-    },
-    [setLane, setFilters, clearSelection],
-  )
-
-  const saveView = useCallback(
-    (name: string) => {
-      setViews((prev) => [
-        ...prev,
-        { id: `view-${Date.now().toString(36)}`, name, lane, filters },
-      ])
-    },
-    [setViews, lane, filters],
-  )
-
-  const deleteView = useCallback(
-    (id: string) => setViews((prev) => prev.filter((view) => view.id !== id)),
-    [setViews],
-  )
 
   const toggleSelect = useCallback((id: string) => {
     setSelected((prev) => {
@@ -296,15 +247,6 @@ export default function Orders() {
       />
 
       <StageTabs active={lane} counts={counts} onChange={changeLane} />
-
-      <SavedViews
-        views={views}
-        activeId={activeViewId}
-        canSave={isFiltered && activeViewId === null}
-        onApply={applyView}
-        onSave={saveView}
-        onDelete={deleteView}
-      />
 
       <OrdersToolbar
         filters={filters}
