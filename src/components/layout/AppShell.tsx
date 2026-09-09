@@ -16,7 +16,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="flex min-h-0 flex-1">
           <Sidebar />
 
-          <main className="min-w-0 flex-1 pr-3 pb-3">
+          {/* An even canvas gutter on all four sides, so the pane floats clear
+              of the sidebar and the top bar rather than butting into them. */}
+          <main className="min-w-0 flex-1 p-3">
             <div className="relative h-full">
               <div className="shadow-pane h-full overflow-y-auto rounded-shell bg-surface ring-1 ring-hairline/70">
                 <div className="mx-auto max-w-[1400px] px-8 py-7">{children}</div>
