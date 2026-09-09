@@ -59,7 +59,7 @@ export function Menu({
             side === 'top' ? 'bottom-full mb-1.5' : 'mt-1.5',
           )}
         >
-          {header && <p className="label-micro px-3 pt-1.5 pb-1">{header}</p>}
+          {header && <p className="label-text px-3 pt-1.5 pb-1">{header}</p>}
           {items.map((item) => (
             <button
               key={item.label}

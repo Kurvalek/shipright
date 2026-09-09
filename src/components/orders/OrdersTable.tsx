@@ -64,11 +64,11 @@ export function OrdersTable({
                 />
               </th>
               {columns.map((column) => (
-                <th key={column} className="label-micro py-2.5 pr-4 text-left">
+                <th key={column} className="label-text py-2.5 pr-4 text-left">
                   {column}
                 </th>
               ))}
-              <th className="label-micro py-2.5 pr-5 text-right">Actions</th>
+              <th className="label-text py-2.5 pr-5 text-right">Actions</th>
             </tr>
           </thead>
 

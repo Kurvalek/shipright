@@ -7,7 +7,7 @@ const control =
 
 export function Label({ children, htmlFor }: { children: ReactNode; htmlFor?: string }) {
   return (
-    <label htmlFor={htmlFor} className="label-micro mb-1.5 block">
+    <label htmlFor={htmlFor} className="label-text mb-1.5 block">
       {children}
     </label>
   )

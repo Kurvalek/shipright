@@ -79,7 +79,7 @@ export function OrderDetailsPanel({
               to find the next step. */}
           <div className="mb-5 flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <span className="label-micro">Stage</span>
+              <span className="label-text">Stage</span>
               <StatusPill status={order.status} />
             </div>
             {advance ? (

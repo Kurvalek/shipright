@@ -16,12 +16,12 @@ export function LineStockTable({ lines }: { lines: LineStock[] }) {
     <table className="w-full">
       <thead>
         <tr className="border-b border-hairline-subtle">
-          <th className="label-micro pb-2 text-left">SKU</th>
-          <th className="label-micro pb-2 text-left">Product</th>
-          <th className="label-micro pb-2 text-right">Required</th>
-          <th className="label-micro pb-2 text-right">On hand</th>
-          <th className="label-micro pb-2 pl-6 text-left">Location</th>
-          <th className="label-micro pb-2" />
+          <th className="label-text pb-2 text-left">SKU</th>
+          <th className="label-text pb-2 text-left">Product</th>
+          <th className="label-text pb-2 text-right">Required</th>
+          <th className="label-text pb-2 text-right">On hand</th>
+          <th className="label-text pb-2 pl-6 text-left">Location</th>
+          <th className="label-text pb-2" />
         </tr>
       </thead>
       <tbody>

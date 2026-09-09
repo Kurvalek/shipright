@@ -170,13 +170,16 @@
   }
 }
 
-@utility label-micro {
-  font-size: 10px;
-  font-weight: 600;
+/* Field labels and column headers. Small caps are quick to recognise but slow
+   to read, and Narnoor's capitals are wide enough that a header set in them
+   took more room than the data underneath. Sentence case a couple of steps
+   larger says the same thing without the decoding, and the darker ink clears
+   the contrast floor that 10px muted grey never did. */
+@utility label-text {
+  font-size: 12px;
+  font-weight: 500;
   line-height: 1.4;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--color-ink-muted);
+  color: var(--color-ink-secondary);
 }
 
 /* Quantities, counts and IDs must align down the column or the table stops

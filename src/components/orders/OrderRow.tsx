@@ -169,7 +169,7 @@ export function OrderRow({
           <td colSpan={ORDER_COLUMN_COUNT} className="px-5 pt-1 pb-5">
             <div className="rounded-table border border-hairline bg-surface p-4">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                <p className="label-micro">Line items and stock</p>
+                <p className="label-text">Line items and stock</p>
                 <div className="flex items-center gap-2">
                   {order.assigneeId === null && (
                     <Menu
@@ -193,9 +193,11 @@ export function OrderRow({
 
               <LineStockTable lines={stock.lines} />
 
+              {/* The label and the note now share a size, so the note takes
+                  full ink to stay the thing being read. */}
               {order.notes && (
-                <p className="mt-3 border-t border-hairline-subtle pt-3 text-[13px] text-ink-secondary">
-                  <span className="label-micro mr-2">Note</span>
+                <p className="mt-3 border-t border-hairline-subtle pt-3 text-[13px] text-ink">
+                  <span className="label-text mr-2">Note</span>
                   {order.notes}
                 </p>
               )}

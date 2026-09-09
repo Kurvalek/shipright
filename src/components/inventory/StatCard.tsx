@@ -17,7 +17,7 @@ export function StatCard({
   return (
     <div className="rounded-card border border-hairline bg-surface px-5 py-4">
       <div className="flex items-start justify-between gap-3">
-        <p className="label-micro">{label}</p>
+        <p className="label-text">{label}</p>
         <span
           className={cn(
             'grid size-7 shrink-0 place-items-center rounded-md',

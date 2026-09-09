@@ -203,7 +203,7 @@ export default function Inventory() {
                   <th
                     key={column}
                     className={cn(
-                      'label-micro py-2.5 pr-4 text-left',
+                      'label-text py-2.5 pr-4 text-left',
                       i === 0 && 'pl-5',
                       (column === 'On hand' || column === 'Reorder at') && 'text-right',
                     )}
@@ -211,7 +211,7 @@ export default function Inventory() {
                     {column}
                   </th>
                 ))}
-                <th className="label-micro py-2.5 pr-5 text-right">Actions</th>
+                <th className="label-text py-2.5 pr-5 text-right">Actions</th>
               </tr>
             </thead>
 

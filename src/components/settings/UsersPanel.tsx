@@ -42,11 +42,11 @@ export function UsersPanel() {
         <table className="w-full border-collapse">
           <thead>
             <tr className="border-b border-hairline bg-surface">
-              <th className="label-micro py-2.5 pr-4 pl-5 text-left">Name</th>
-              <th className="label-micro py-2.5 pr-4 text-left">Email</th>
-              <th className="label-micro py-2.5 pr-4 text-left">Role</th>
-              <th className="label-micro py-2.5 pr-4 text-right">Open orders</th>
-              <th className="label-micro py-2.5 pr-5 text-right">Actions</th>
+              <th className="label-text py-2.5 pr-4 pl-5 text-left">Name</th>
+              <th className="label-text py-2.5 pr-4 text-left">Email</th>
+              <th className="label-text py-2.5 pr-4 text-left">Role</th>
+              <th className="label-text py-2.5 pr-4 text-right">Open orders</th>
+              <th className="label-text py-2.5 pr-5 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
