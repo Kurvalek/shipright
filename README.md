@@ -41,9 +41,11 @@ All tokens live in `@theme` in [src/index.css](src/index.css).
 
 ## Data and persistence
 
+The tenant is Hillside Home Decor, shipping lamps, textiles and tabletop pieces direct to the people who buy them. That framing decides the shape of the data: customers are individuals, and an order is one or two things rather than a pallet, so the pressure on the floor comes from the number of orders and not the size of any one of them.
+
 Mock data only, generated deterministically in [src/lib/orderSeed.ts](src/lib/orderSeed.ts): 250 orders, 50 SKUs, 6 users. Volume is the point — a worker clearing a packed backlog in one action only reads as a win if there really is a backlog.
 
-Every attribute is an exact count rather than a probability, so the numbers on the tabs are a design decision and not a roll of the dice: 84 ready to ship, 52 rush orders sitting unassigned. Quantities are chosen against live stock, so whether an order is fulfillable is decided deliberately rather than by a bulk order happening to exceed a shelf. Ship-by times are anchored to the moment the module loads, so the overdue and due-today sets are always populated.
+Every attribute is an exact count rather than a probability, so the numbers on the tabs are a design decision and not a roll of the dice: 84 ready to ship, 52 rush orders sitting unassigned, 14 blocked by an out-of-stock line. Line quantities are clamped against live stock, so whether an order is fulfillable is decided by the generator rather than by a quantity roll happening to exceed a shelf. Ship-by times are anchored to the moment the module loads, so the overdue and due-today sets are always populated.
 
 The split on persistence is deliberate:
 
