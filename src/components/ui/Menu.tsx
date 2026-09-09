@@ -14,11 +14,14 @@ export function Menu({
   trigger,
   items,
   align = 'right',
+  /** 'top' for triggers that sit near the bottom edge, like the bulk bar. */
+  side = 'bottom',
   header,
 }: {
   trigger: (props: { open: boolean; toggle: () => void }) => ReactNode
   items: MenuItem[]
   align?: 'left' | 'right'
+  side?: 'top' | 'bottom'
   header?: string
 }) {
   const [open, setOpen] = useState(false)
@@ -50,9 +53,10 @@ export function Menu({
         <div
           role="menu"
           className={cn(
-            'absolute z-40 mt-1.5 min-w-48 overflow-hidden rounded-lg border border-hairline bg-surface py-1 shadow-lg',
+            'absolute z-40 min-w-48 overflow-hidden rounded-lg border border-hairline bg-surface py-1 shadow-lg',
             'motion-safe:animate-[rise_100ms_ease-out]',
             align === 'right' ? 'right-0' : 'left-0',
+            side === 'top' ? 'bottom-full mb-1.5' : 'mt-1.5',
           )}
         >
           {header && <p className="label-micro px-3 pt-1.5 pb-1">{header}</p>}

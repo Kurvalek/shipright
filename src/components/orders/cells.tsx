@@ -92,6 +92,6 @@ export function AssigneeCell({ user }: { user: User | undefined }) {
 
 export function Mono({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <span className={cn('font-mono text-[12px] tracking-[-0.02em]', className)}>{children}</span>
+    <span className={cn('code text-[12.5px]', className)}>{children}</span>
   )
 }

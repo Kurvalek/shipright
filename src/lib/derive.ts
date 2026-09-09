@@ -28,89 +28,105 @@ export function isOverdue(order: Order, now: Date): boolean {
   return isActive(order) && new Date(order.dueAt).getTime() < now.getTime()
 }
 
-/* Ship today and Overdue overlap on purpose: Ship today is the whole day's
-   workload, Overdue is the subset that has already slipped and needs a
-   decision. An order due at 08:00 that is still unpacked belongs in both. */
-export const LANES: Array<{ id: LaneId; label: string; description: string; empty: string }> = [
+/* The tabs follow the physical path an order takes across the floor, so a
+   worker only ever reads the one stage they are standing in. Needs attention
+   is the exception: it cuts across stages to collect the orders that will not
+   move on their own. */
+/** Bulk actions offered in a stage. The first is promoted to primary. */
+export type BulkAction = 'assign' | 'start' | 'packed' | 'shipped' | 'completed'
+
+export const LANES: Array<{
+  id: LaneId
+  label: string
+  description: string
+  empty: string
+  /* Only the moves that make sense from where these orders already are. A
+     packed order has no business being offered "Mark packed" again. */
+  bulkActions: BulkAction[]
+}> = [
   {
-    id: 'ship_today',
-    label: 'Ship today',
-    description: 'Due before the day is out and still open',
-    empty: "Nothing left due today. The floor is clear.",
+    id: 'needs_attention',
+    label: 'Needs attention',
+    description: 'Overdue, or blocked by stock, and will not move on its own',
+    empty: 'Nothing is stuck. Everything is inside its window and fulfillable.',
+    // Mixed statuses land here, so the full set stays available.
+    bulkActions: ['assign', 'packed', 'shipped'],
   },
   {
-    id: 'at_risk',
-    label: 'Overdue / at risk',
-    description: 'Past its due time and still open',
-    empty: 'Nothing overdue. Everything is inside its window.',
-  },
-  {
-    id: 'unassigned',
-    label: 'Unassigned',
+    id: 'new_unassigned',
+    label: 'New / unassigned',
     description: 'Nobody has picked these up yet',
     empty: 'Every open order has a name on it.',
+    bulkActions: ['assign', 'start'],
   },
   {
-    id: 'in_progress',
-    label: 'In progress',
-    description: 'Being picked right now',
-    empty: 'Nothing is being picked at the moment.',
+    id: 'ready_to_pack',
+    label: 'Ready to pack',
+    description: 'Assigned and picked, waiting to be boxed',
+    empty: 'Nothing waiting to be packed.',
+    bulkActions: ['packed', 'assign'],
   },
   {
     id: 'ready_to_ship',
     label: 'Ready to ship',
     description: 'Packed and waiting on a carrier',
     empty: 'No packed orders waiting. Nothing is backing up.',
+    bulkActions: ['shipped', 'assign'],
   },
   {
-    id: 'all',
-    label: 'All orders',
-    description: 'Everything, newest due first',
-    empty: 'No orders yet.',
+    id: 'completed',
+    label: 'Completed',
+    description: 'Shipped and closed out, newest first',
+    empty: 'Nothing has shipped yet.',
+    bulkActions: ['completed'],
   },
 ]
 
-export function matchesLane(order: Order, lane: LaneId, now: Date): boolean {
+/** Fast SKU lookup, built once per inventory change rather than once per row. */
+export type SkuIndex = Map<string, InventoryItem>
+
+export function buildSkuIndex(inventory: InventoryItem[]): SkuIndex {
+  return new Map(inventory.map((item) => [item.sku, item]))
+}
+
+export function matchesLane(order: Order, lane: LaneId, now: Date, skus: SkuIndex): boolean {
   switch (lane) {
-    case 'ship_today':
-      return isActive(order) && isSameDay(new Date(order.dueAt), now)
-    case 'at_risk':
-      return isOverdue(order, now)
-    case 'unassigned':
-      return order.assigneeId === null && order.status !== 'completed'
-    case 'in_progress':
+    case 'needs_attention':
+      // Late, or cannot be picked complete off the shelf. Either way a person
+      // has to make a call before it ships.
+      return isActive(order) && (isOverdue(order, now) || orderStock(order, skus).state === 'out')
+    case 'new_unassigned':
+      return isActive(order) && (order.status === 'new' || order.assigneeId === null)
+    case 'ready_to_pack':
       return order.status === 'in_progress'
     case 'ready_to_ship':
       return order.status === 'packed'
-    case 'all':
-      return true
+    case 'completed':
+      return order.status === 'shipped' || order.status === 'completed'
   }
 }
 
-export function laneCounts(orders: Order[], now: Date): Record<LaneId, number> {
+export function laneCounts(orders: Order[], now: Date, skus: SkuIndex): Record<LaneId, number> {
   const counts = {
-    ship_today: 0,
-    at_risk: 0,
-    unassigned: 0,
-    in_progress: 0,
+    needs_attention: 0,
+    new_unassigned: 0,
+    ready_to_pack: 0,
     ready_to_ship: 0,
-    all: 0,
+    completed: 0,
   } satisfies Record<LaneId, number>
 
   for (const order of orders) {
     for (const lane of LANES) {
-      if (matchesLane(order, lane.id, now)) counts[lane.id] += 1
+      if (matchesLane(order, lane.id, now, skus)) counts[lane.id] += 1
     }
   }
   return counts
 }
 
 /** Joins an order's lines against live inventory to answer "can we fulfil it". */
-export function orderStock(order: Order, inventory: InventoryItem[]): OrderStock {
-  const bySku = new Map(inventory.map((item) => [item.sku, item]))
-
+export function orderStock(order: Order, skus: SkuIndex): OrderStock {
   const lines = order.lines.map((line) => {
-    const item = bySku.get(line.sku)
+    const item = skus.get(line.sku)
     const onHand = item?.quantity ?? 0
     const reorderPoint = item?.reorderPoint ?? 0
 
@@ -263,11 +279,8 @@ export function sortForLane(orders: Order[], lane: LaneId): Order[] {
     new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime()
 
   // Closed work reads best newest-first; open work reads best most-urgent-first.
-  if (lane === 'all') {
-    return [...orders].sort((a, b) => {
-      if (isActive(a) !== isActive(b)) return isActive(a) ? -1 : 1
-      return isActive(a) ? byDueAsc(a, b) : -byDueAsc(a, b)
-    })
+  if (lane === 'completed') {
+    return [...orders].sort((a, b) => -byDueAsc(a, b))
   }
   return [...orders].sort(byDueAsc)
 }

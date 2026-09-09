@@ -8,7 +8,9 @@ import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 const BASE = process.argv[2] ?? 'http://localhost:5185'
 const OUT = process.argv[3] ?? '/tmp/sr-shots'
-const PORT = 9333
+// A per-run port, so a leftover browser from an earlier run can never be
+// mistaken for this one.
+const PORT = 9400 + (process.pid % 400)
 const VIEWPORT = { width: 1560, height: 1000 }
 
 mkdirSync(OUT, { recursive: true })
@@ -93,11 +95,17 @@ await send('Emulation.setDeviceMetricsOverride', {
 })
 
 async function goto(path) {
-  await send('Page.navigate', { url: `${BASE}${path}` })
+  const url = `${BASE}${path}`
+  await send('Page.navigate', { url })
   await sleep(900)
-  // Wait for webfonts so serif headings never capture mid-swap.
+  // Wait for webfonts so headings never capture mid-swap.
   await evaluate('document.fonts.ready.then(() => true)')
   await sleep(250)
+
+  // A silent failure here shows up much later as an inexplicable SecurityError
+  // on localStorage, so check the document actually arrived.
+  const href = await evaluate('location.href')
+  if (!href.startsWith(BASE)) throw new Error(`navigation failed: at ${href}, wanted ${url}`)
 }
 
 async function capture(name, fullPage = false) {
@@ -108,18 +116,24 @@ async function capture(name, fullPage = false) {
   console.log(`captured ${name}`)
 }
 
-/** Clicks the first element whose text content matches, via the DOM. */
-async function clickText(selector, text) {
+/* Clicks the first matching element, optionally scoped to a container. Rows
+   carry the same action labels as the bulk bar, so an unscoped click on
+   "Mark shipped" hits row one instead of the whole selection. */
+async function clickText(selector, text, within = null) {
   const ok = await evaluate(`(() => {
-    const el = [...document.querySelectorAll(${JSON.stringify(selector)})]
+    const root = ${within ? `document.querySelector(${JSON.stringify(within)})` : 'document'};
+    if (!root) return false;
+    const el = [...root.querySelectorAll(${JSON.stringify(selector)})]
       .find(n => n.textContent.trim().startsWith(${JSON.stringify(text)}));
     if (!el) return false;
     el.click();
     return true;
   })()`)
-  if (!ok) throw new Error(`no ${selector} matching "${text}"`)
+  if (!ok) throw new Error(`no ${selector} matching "${text}"${within ? ` within ${within}` : ''}`)
   await sleep(400)
 }
+
+const BULK_BAR = '[aria-label="Bulk actions"]'
 
 async function setView(key, value) {
   await evaluate(
@@ -127,68 +141,75 @@ async function setView(key, value) {
   )
 }
 
-// --- Orders, default lane -------------------------------------------------
-await goto('/orders')
-await setView('orders.lane', 'ship_today')
-await goto('/orders')
-await capture('01-orders-ship-today')
+const NO_FILTERS = { search: '', status: '', priority: '', assignee: '' }
 
-// --- Orders, a row expanded to show SKU-level stock ----------------------
+/** Ticks the table's header checkbox, which takes every row in the stage. */
+async function selectAll() {
+  const ok = await evaluate(`(() => {
+    const box = document.querySelector('thead [role=checkbox]');
+    if (!box) return false;
+    box.click();
+    return true;
+  })()`)
+  if (!ok) throw new Error('no header checkbox')
+  await sleep(400)
+}
+
+// --- Orders, the default stage -------------------------------------------
+await goto('/orders')
+await setView('orders.lane', 'needs_attention')
+await setView('orders.filters', NO_FILTERS)
+await goto('/orders')
+await capture('01-orders-needs-attention')
+
+// --- A row expanded to show SKU-level stock ------------------------------
 await clickText('td', 'ORD-')
 await capture('02-orders-row-expanded')
 
-// --- Orders, multi-select with the bulk bar up ---------------------------
+/* Scenario one: clear the packed backlog in a single action. */
 await goto('/orders')
-await evaluate(`(() => {
-  const boxes = [...document.querySelectorAll('tbody [role=checkbox]')];
-  boxes.slice(0, 4).forEach(b => b.click());
-})()`)
-await sleep(400)
-await capture('03-orders-bulk-selected')
+await clickText('[role=tab]', 'Ready to ship')
+await capture('03-ready-to-ship')
 
-// --- Orders, the at-risk lane -------------------------------------------
-await goto('/orders')
-await clickText('[role=tab]', 'Overdue')
-await capture('04-orders-at-risk')
+await selectAll()
+await capture('04-ready-to-ship-all-selected')
 
-// --- Orders, an empty lane ----------------------------------------------
+await clickText('button', 'Mark shipped', BULK_BAR)
+await capture('05-ready-to-ship-shipped-with-undo')
+
+/* Scenario two: hand 52 rush orders to one worker from a saved view. */
 await goto('/orders')
-await evaluate(`(() => {
-  const input = document.querySelector('input[aria-label="Search orders"]');
-  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
-  setter.call(input, 'zzzzz');
-  input.dispatchEvent(new Event('input', { bubbles: true }));
-})()`)
-await sleep(500)
-await capture('05-orders-empty')
+await setView('orders.lane', 'needs_attention')
+await setView('orders.filters', NO_FILTERS)
+await goto('/orders')
+await clickText('span button', 'New \u00b7 Rush')
+await capture('06-saved-view-new-rush')
+
+await selectAll()
+await clickText('button', 'Assign to', BULK_BAR)
+await capture('07-new-rush-assign-menu')
+
+await clickText('[role=menuitem]', 'Bahar')
+await capture('08-new-rush-assigned')
 
 // --- Order details modal -------------------------------------------------
-// Filters persist by design, so the empty-state search above has to be
-// cleared before the remaining captures.
-await setView('orders.filters', { search: '', status: '', priority: '', assignee: '' })
+await goto('/orders')
+await setView('orders.lane', 'ready_to_pack')
+await setView('orders.filters', NO_FILTERS)
 await goto('/orders')
 await clickText('button', 'View')
-await capture('06-order-details')
+await capture('09-order-details')
 
 // --- Inventory -----------------------------------------------------------
 await goto('/inventory')
-await capture('07-inventory')
+await capture('10-inventory')
 
-// --- Edit inventory item -------------------------------------------------
-await evaluate(`(() => {
-  const row = document.querySelector('tbody tr');
-  row.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
-  [...row.querySelectorAll('button')].find(b => b.textContent.includes('Edit'))?.click();
-})()`)
-await sleep(500)
-await capture('08-inventory-edit')
-
-// --- Settings, all four tabs --------------------------------------------
+// --- Settings ------------------------------------------------------------
 for (const tab of ['account', 'users', 'warehouse', 'notifications']) {
   await goto('/settings')
   await setView('settings.tab', tab)
   await goto('/settings')
-  await capture(`09-settings-${tab}`)
+  await capture(`11-settings-${tab}`)
 }
 
 ws.close()

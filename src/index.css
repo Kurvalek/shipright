@@ -1,52 +1,66 @@
-@import '@fontsource-variable/inter';
-@import '@fontsource/instrument-serif/400.css';
-@import '@fontsource/instrument-serif/400-italic.css';
-@import '@fontsource/jetbrains-mono/400.css';
-@import '@fontsource/jetbrains-mono/500.css';
+@import '@fontsource/narnoor/latin-400.css';
+@import '@fontsource/narnoor/latin-500.css';
+@import '@fontsource/narnoor/latin-600.css';
+@import '@fontsource/narnoor/latin-700.css';
 
 @import 'tailwindcss';
 
 @theme {
-  /* Brand — oxblood. Reserved for the active lane, primary buttons, the logo
-     mark and "on" toggles. It appears roughly once per view, by design. */
-  --color-brand: #7c2d40;
-  --color-brand-hover: #672434;
-  --color-brand-press: #571d2b;
-  --color-brand-tint: #faf2f4;
-  --color-brand-tint-border: #ebd5db;
+  /* Four colours carry the whole product: a warm shell, a mauve tint, oxblood
+     for anything actionable, and plum for text. Everything below is derived
+     from those, so the brand reads without shouting. */
 
-  /* Warm neutrals */
-  --color-canvas: #fafaf9;
-  --color-sidebar: #f6f5f2;
+  /* Oxblood. Primary buttons, the active tab rule, the logo mark, focus. */
+  --color-brand: #661a3a;
+  --color-brand-hover: #571530;
+  --color-brand-press: #481127;
+  --color-brand-tint: #f7f0f3;
+  --color-brand-tint-border: #e6dee1;
+
+  /* Mauve. Tints, hovers and the quieter status fills. */
+  --color-mauve: #e6dee1;
+  --color-mauve-soft: #f1eaed;
+
+  /* Shell and surfaces. The canvas sits behind the sidebar and above the
+     content card; the card itself is the only true white. */
+  --color-canvas: #f4f2f0;
+  --color-sidebar: #f4f2f0;
   --color-surface: #ffffff;
-  --color-surface-sunken: #fbfaf8;
-  --color-hairline: #e6e3de;
-  --color-hairline-subtle: #efede9;
-  --color-ink: #191716;
-  --color-ink-secondary: #6b655e;
-  --color-ink-muted: #9b948b;
+  --color-surface-sunken: #faf8f9;
+  --color-hairline: #e4dde0;
+  --color-hairline-subtle: #efeaec;
 
-  /* Semantic — pale tint on tint, never saturated */
-  --color-neutral-fill: #f3f1ee;
-  --color-neutral-text: #6b655e;
-  --color-progress-fill: #eef1f7;
-  --color-progress-text: #43536e;
-  --color-packed-fill: #eaf2f2;
-  --color-packed-text: #2f5f5f;
-  --color-shipped-fill: #edf4ee;
-  --color-shipped-text: #2e6844;
-  --color-risk-fill: #fcf3e5;
-  --color-risk-text: #8a5518;
-  --color-risk-edge: #e0a44a;
-  --color-danger-fill: #fbecec;
-  --color-danger-text: #a4353a;
-  --color-danger-dot: #c1494e;
+  /* Plum ink. */
+  --color-ink: #3f2a31;
+  --color-ink-secondary: #6f5c64;
+  --color-ink-muted: #9c8b93;
 
-  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
-  --font-serif: 'Instrument Serif', ui-serif, Georgia, serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  /* Semantic — pale tint on tint, never saturated, all pulled warm so they
+     sit inside the palette rather than next to it. */
+  --color-neutral-fill: #f1eced;
+  --color-neutral-text: #6f5c64;
+  --color-progress-fill: #eae7ef;
+  --color-progress-text: #524a68;
+  --color-packed-fill: #e6dee1;
+  --color-packed-text: #6b3a4e;
+  --color-shipped-fill: #e6ede7;
+  --color-shipped-text: #3b6147;
+  --color-risk-fill: #f8ebe0;
+  --color-risk-text: #8a4e24;
+  --color-risk-edge: #c98b4e;
+  --color-danger-fill: #f8e6e8;
+  --color-danger-text: #97303f;
+  --color-danger-dot: #b34452;
+
+  /* One typeface, used for everything. Narnoor has no italic, so nothing in
+     the UI leans on one. */
+  --font-sans: 'Narnoor', ui-serif, Georgia, serif;
+  --font-serif: 'Narnoor', ui-serif, Georgia, serif;
+  --font-mono: 'Narnoor', ui-monospace, SFMono-Regular, monospace;
 
   --radius-card: 10px;
+  /* The floating content pane. */
+  --radius-shell: 14px;
 }
 
 @keyframes fade {
@@ -96,13 +110,13 @@
   }
 
   ::selection {
-    background-color: var(--color-brand-tint-border);
+    background-color: var(--color-mauve);
   }
 }
 
 @utility label-micro {
   font-size: 10px;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.4;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -115,8 +129,23 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Narnoor is not monospaced, so identifiers get tabular figures and a touch of
+   tracking to keep a column of SKUs readable as a column. */
+@utility code {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
 @utility display {
   font-family: var(--font-serif);
-  font-weight: 400;
-  letter-spacing: -0.01em;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+/* The floating content pane: a slight lift off the warm shell, not a card
+   sitting on a card. */
+@utility shadow-pane {
+  box-shadow:
+    0 1px 2px rgb(63 42 49 / 0.04),
+    0 8px 24px -12px rgb(63 42 49 / 0.12);
 }

@@ -1,4 +1,4 @@
-import { Search, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { Select } from '@/components/ui/Field'
 import { STATUS_META } from '@/lib/derive'
 import { ORDER_FLOW } from '@/lib/derive'
@@ -29,20 +29,6 @@ export function OrdersToolbar({
 
   return (
     <div className="flex flex-wrap items-center gap-2 pb-4">
-      <div className="relative min-w-[240px] flex-1">
-        <Search
-          size={14}
-          className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-ink-muted"
-        />
-        <input
-          value={filters.search}
-          onChange={(e) => onChange({ search: e.target.value })}
-          placeholder="Search by order, customer or SKU..."
-          aria-label="Search orders"
-          className="h-9 w-full rounded-md bg-surface pr-3 pl-9 text-[13px] ring-1 ring-hairline transition-colors placeholder:text-ink-muted hover:ring-ink-muted/50 focus:ring-brand focus:outline-none"
-        />
-      </div>
-
       <Select
         value={filters.status}
         placeholder="All statuses"

@@ -6,14 +6,15 @@ import { Mono, DueCell, PriorityPill, StockIndicator } from './cells'
 import { LineStockTable } from './LineStockTable'
 import { StatusTimeline } from './StatusTimeline'
 import { dueLabel, formatTimestamp, orderStock } from '@/lib/derive'
-import type { InventoryItem, Order, OrderStatus, User } from '@/lib/types'
+import type { SkuIndex } from '@/lib/derive'
+import type { Order, OrderStatus, User } from '@/lib/types'
 
 /* Detail and notes, not the only way to move an order forward. Status still
    lives here, but the row and the bulk bar are the fast paths. */
 export function OrderDetailsModal({
   order,
   users,
-  inventory,
+  skus,
   now,
   onClose,
   onStatus,
@@ -22,7 +23,7 @@ export function OrderDetailsModal({
 }: {
   order: Order | null
   users: User[]
-  inventory: InventoryItem[]
+  skus: SkuIndex
   now: Date
   onClose: () => void
   onStatus: (id: string, status: OrderStatus) => void
@@ -37,7 +38,7 @@ export function OrderDetailsModal({
 
   if (!order) return null
 
-  const stock = orderStock(order, inventory)
+  const stock = orderStock(order, skus)
   const due = dueLabel(order, now)
 
   return (

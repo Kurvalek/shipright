@@ -5,7 +5,8 @@ import { Menu } from '@/components/ui/Menu'
 import { AssigneeCell, DueCell, Mono, PriorityPill, StatusPill, StockIndicator } from './cells'
 import { LineStockTable } from './LineStockTable'
 import { STATUS_META, dueLabel, nextAction, orderStock } from '@/lib/derive'
-import type { InventoryItem, Order, OrderStatus, User } from '@/lib/types'
+import type { SkuIndex } from '@/lib/derive'
+import type { Order, OrderStatus, User } from '@/lib/types'
 import { cn } from '@/lib/cn'
 
 export const ORDER_COLUMN_COUNT = 10
@@ -13,7 +14,7 @@ export const ORDER_COLUMN_COUNT = 10
 export function OrderRow({
   order,
   users,
-  inventory,
+  skus,
   now,
   selected,
   expanded,
@@ -25,7 +26,7 @@ export function OrderRow({
 }: {
   order: Order
   users: User[]
-  inventory: InventoryItem[]
+  skus: SkuIndex
   now: Date
   selected: boolean
   expanded: boolean
@@ -35,7 +36,7 @@ export function OrderRow({
   onStatus: (status: OrderStatus) => void
   onAssign: (assigneeId: string | null) => void
 }) {
-  const stock = orderStock(order, inventory)
+  const stock = orderStock(order, skus)
   const due = dueLabel(order, now)
   const assignee = users.find((u) => u.id === order.assigneeId)
   const advance = nextAction(order.status)

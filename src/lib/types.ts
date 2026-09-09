@@ -4,13 +4,26 @@ export type Priority = 'rush' | 'standard' | 'bulk'
 
 export type Role = 'admin' | 'manager' | 'worker'
 
+/** The five fulfillment stages a worker actually works out of. */
 export type LaneId =
-  | 'ship_today'
-  | 'at_risk'
-  | 'unassigned'
-  | 'in_progress'
+  | 'needs_attention'
+  | 'new_unassigned'
+  | 'ready_to_pack'
   | 'ready_to_ship'
-  | 'all'
+  | 'completed'
+
+/** A stage plus a filter combination, saved under a name by the user. */
+export interface SavedView {
+  id: string
+  name: string
+  lane: LaneId
+  filters: {
+    search: string
+    status: OrderStatus | ''
+    priority: Priority | ''
+    assignee: string
+  }
+}
 
 /** Worst-case stock state across an order's line items. */
 export type Fulfillment = 'ok' | 'low' | 'out'

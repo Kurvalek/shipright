@@ -103,7 +103,7 @@ export function EditItemModal({
             id="location"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            className="font-mono text-[12px]"
+            className="code text-[12.5px]"
           >
             {/* The item's current bin may predate the configured list. */}
             {!locations.some((l) => l.code === item.location) && (

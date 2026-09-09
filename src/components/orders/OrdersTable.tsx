@@ -3,12 +3,13 @@ import { PackageOpen } from 'lucide-react'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ORDER_COLUMN_COUNT, OrderRow } from './OrderRow'
-import type { InventoryItem, Order, OrderStatus, User } from '@/lib/types'
+import type { Order, OrderStatus, User } from '@/lib/types'
+import type { SkuIndex } from '@/lib/derive'
 
 const columns = [
   'Order',
   'Customer',
-  'Due',
+  'Ship by',
   'Status',
   'Priority',
   'Assignee',
@@ -19,7 +20,7 @@ const columns = [
 export function OrdersTable({
   orders,
   users,
-  inventory,
+  skus,
   now,
   selected,
   expandedId,
@@ -33,7 +34,7 @@ export function OrdersTable({
 }: {
   orders: Order[]
   users: User[]
-  inventory: InventoryItem[]
+  skus: SkuIndex
   now: Date
   selected: Set<string>
   expandedId: string | null
@@ -77,7 +78,7 @@ export function OrdersTable({
                 key={order.id}
                 order={order}
                 users={users}
-                inventory={inventory}
+                skus={skus}
                 now={now}
                 selected={selected.has(order.id)}
                 expanded={expandedId === order.id}

@@ -1,41 +1,18 @@
+import { generateOrders } from './orderSeed'
 import type {
   AccountSettings,
   InventoryItem,
   NotificationSettings,
   Order,
-  OrderStatus,
-  Priority,
   User,
   WarehouseSettings,
 } from './types'
 
-/* Due dates are anchored to the moment the module loads rather than to fixed
-   calendar dates, so "Ship today" and "Overdue" are always populated no matter
-   when the prototype is opened. Everything else is fixed, so the screen is
-   identical between reloads. */
+/* Ship-by times are anchored to the moment the module loads rather than to
+   fixed calendar dates, so the overdue and due-today sets are always populated
+   no matter when the prototype is opened. */
 
 const NOW = new Date()
-
-function atDay(dayOffset: number, hour: number, minute = 0): string {
-  const d = new Date(NOW)
-  d.setDate(d.getDate() + dayOffset)
-  d.setHours(hour, minute, 0, 0)
-  return d.toISOString()
-}
-
-/* Spreads a due time across whatever is left of today, so the day's workload
-   always looks like a real shift regardless of the hour the prototype is
-   opened. `fraction` runs 0 (soon) to 1 (end of day). */
-function laterToday(fraction: number): string {
-  const startMinute = NOW.getHours() * 60 + NOW.getMinutes() + 20
-  const endMinute = 23 * 60 + 45
-  const minute = startMinute + Math.max(0, endMinute - startMinute) * fraction
-
-  const d = new Date(NOW)
-  // Snapped to the quarter hour, the way dock slots are actually booked.
-  d.setHours(0, Math.round(minute / 15) * 15, 0, 0)
-  return d.toISOString()
-}
 
 function hoursAgo(h: number): string {
   return new Date(NOW.getTime() - h * 3_600_000).toISOString()
@@ -44,6 +21,7 @@ function hoursAgo(h: number): string {
 export const users: User[] = [
   { id: 'u-emma', name: 'Emma Davis', email: 'emma.davis@warehouse.com', role: 'admin' },
   { id: 'u-john', name: 'John Smith', email: 'john.smith@warehouse.com', role: 'manager' },
+  { id: 'u-bahar', name: 'Bahar Yilmaz', email: 'bahar.yilmaz@warehouse.com', role: 'worker' },
   { id: 'u-mike', name: 'Mike Johnson', email: 'mike.johnson@warehouse.com', role: 'worker' },
   { id: 'u-sarah', name: 'Sarah Williams', email: 'sarah.williams@warehouse.com', role: 'worker' },
   { id: 'u-robert', name: 'Robert Chen', email: 'robert.chen@warehouse.com', role: 'worker' },
@@ -135,102 +113,7 @@ export const inventory: InventoryItem[] = itemSeeds.map(
   }),
 )
 
-type OrderSeed = [
-  customer: string,
-  status: OrderStatus,
-  priority: Priority,
-  assigneeId: string | null,
-  dueAt: string,
-  lines: Array<[string, number]>,
-]
-
-/* Distribution is deliberate: every lane lands on a non-trivial count, the
-   at-risk set skews Rush, and several orders pull the SKUs that are low or out
-   so the can-fulfill signal has something to say. */
-const orderSeeds: OrderSeed[] = [
-  // Overdue, still active. These are the escalation set.
-  ['Northport Logistics', 'packed', 'rush', 'u-mike', atDay(-2, 15), [['SKU-201', 120], ['SKU-501', 60]]],
-  ['FastShip Retail', 'in_progress', 'rush', 'u-sarah', atDay(-1, 11), [['SKU-205', 40], ['SKU-101', 25]]],
-  ['BoxWorks Fulfilment', 'new', 'rush', null, atDay(-1, 16), [['SKU-504', 90]]],
-  // Fulfillable, but shipping it drops the riser below its reorder point.
-  ['Meridian Supply Co', 'in_progress', 'standard', 'u-robert', atDay(-1, 9, 30), [['SKU-302', 15], ['SKU-301', 12]]],
-  ['Harbor Point Traders', 'new', 'standard', null, atDay(0, 7), [['SKU-702', 15], ['SKU-701', 20]]],
-
-  // Due today, not yet late. The day's real workload.
-  ['Acme Corporation', 'new', 'rush', null, laterToday(0.04), [['SKU-101', 25], ['SKU-201', 50]]],
-  ['Tech Solutions Inc', 'in_progress', 'standard', 'u-mike', laterToday(0.11), [['SKU-102', 15], ['SKU-105', 30]]],
-  ['Global Retail Co', 'packed', 'bulk', 'u-sarah', laterToday(0.18), [['SKU-501', 200], ['SKU-502', 150], ['SKU-507', 300]]],
-  ['StartUp Ventures', 'new', 'standard', null, laterToday(0.26), [['SKU-303', 20]]],
-  ['Enterprise Systems', 'in_progress', 'rush', 'u-mike', laterToday(0.34), [['SKU-305', 12], ['SKU-207', 18]]],
-  ['Digital Dynamics', 'new', 'standard', null, laterToday(0.42), [['SKU-103', 35]]],
-  ['Pacific Trading', 'in_progress', 'bulk', 'u-robert', laterToday(0.5), [['SKU-202', 90], ['SKU-204', 110]]],
-  ['Coastal Enterprises', 'packed', 'standard', 'u-mike', laterToday(0.58), [['SKU-401', 18]]],
-  ['Summit Solutions', 'in_progress', 'standard', 'u-sarah', laterToday(0.66), [['SKU-404', 60], ['SKU-402', 40]]],
-  ['Ironvale Industrial', 'new', 'rush', null, laterToday(0.74), [['SKU-601', 24], ['SKU-602', 20]]],
-  ['Lakeside Distribution', 'packed', 'bulk', 'u-robert', laterToday(0.83), [['SKU-503', 120], ['SKU-505', 45]]],
-  ['Redwood Office Group', 'in_progress', 'standard', 'u-mike', laterToday(0.92), [['SKU-405', 25], ['SKU-406', 80]]],
-
-  // Tomorrow.
-  ['Innovative Tech Labs', 'new', 'rush', null, atDay(1, 9), [['SKU-104', 30], ['SKU-108', 22]]],
-  ['Metro Office Supply', 'in_progress', 'standard', 'u-sarah', atDay(1, 10, 30), [['SKU-407', 40], ['SKU-403', 55]]],
-  ['Horizon Industries', 'packed', 'rush', 'u-robert', atDay(1, 11), [['SKU-508', 60]]],
-  ['Cedar Grove Supply', 'new', 'standard', null, atDay(1, 13), [['SKU-801', 45]]],
-  ['Blue Harbor Foods', 'in_progress', 'bulk', 'u-mike', atDay(1, 14), [['SKU-502', 180], ['SKU-504', 60]]],
-  ['Vertex Manufacturing', 'packed', 'standard', 'u-sarah', atDay(1, 15, 30), [['SKU-703', 4], ['SKU-704', 8]]],
-  ['Prairie Wholesale', 'new', 'bulk', null, atDay(1, 16), [['SKU-506', 40], ['SKU-501', 150]]],
-  ['Stonebridge Partners', 'in_progress', 'standard', 'u-robert', atDay(1, 17), [['SKU-306', 30]]],
-
-  // Later in the week.
-  ['Atlas Freight', 'new', 'standard', null, atDay(2, 9, 30), [['SKU-802', 50]]],
-  ['Copper Creek Retail', 'packed', 'standard', 'u-mike', atDay(2, 11), [['SKU-307', 100]]],
-  ['Fairview Health', 'in_progress', 'rush', 'u-sarah', atDay(2, 12), [['SKU-604', 6], ['SKU-603', 24]]],
-  ['Granite Peak Outfitters', 'new', 'standard', null, atDay(2, 14), [['SKU-605', 18]]],
-  ['Riverside Commerce', 'in_progress', 'standard', 'u-robert', atDay(2, 15, 30), [['SKU-304', 70]]],
-  ['Oakfield Trading', 'packed', 'bulk', 'u-mike', atDay(3, 10), [['SKU-507', 250]]],
-  ['Silverline Media', 'new', 'standard', null, atDay(3, 11, 30), [['SKU-106', 20], ['SKU-107', 24]]],
-  ['Trailhead Equipment', 'in_progress', 'standard', 'u-sarah', atDay(3, 13), [['SKU-705', 30]]],
-  ['Westgate Interiors', 'new', 'bulk', null, atDay(3, 15), [['SKU-803', 12]]],
-  ['Juniper Systems', 'packed', 'standard', 'u-robert', atDay(4, 10), [['SKU-203', 60]]],
-  ['Bayside Electronics', 'new', 'rush', null, atDay(4, 12), [['SKU-206', 80]]],
-
-  // Closed out. Present so the archive lanes and counts feel real.
-  ['Crestview Supply', 'shipped', 'standard', 'u-mike', atDay(-1, 12), [['SKU-101', 40]]],
-  ['Aspen Retail Group', 'shipped', 'rush', 'u-sarah', atDay(-1, 14), [['SKU-201', 90]]],
-  ['Kingsley Wholesale', 'shipped', 'bulk', 'u-robert', atDay(-2, 10), [['SKU-501', 300]]],
-  ['Duneside Trading', 'shipped', 'standard', 'u-mike', atDay(-2, 13), [['SKU-402', 60]]],
-  ['Elmwood Partners', 'shipped', 'standard', 'u-sarah', atDay(-3, 11), [['SKU-303', 35]]],
-  ['Foxglove Design', 'completed', 'standard', 'u-robert', atDay(-3, 15), [['SKU-405', 20]]],
-  ['Ridgeway Logistics', 'completed', 'rush', 'u-mike', atDay(-4, 9), [['SKU-504', 120]]],
-  ['Seabright Imports', 'completed', 'bulk', 'u-sarah', atDay(-4, 14), [['SKU-502', 220]]],
-  ['Thornbury Group', 'completed', 'standard', 'u-robert', atDay(-5, 10), [['SKU-406', 150]]],
-  ['Umberland Supply', 'completed', 'standard', 'u-mike', atDay(-5, 16), [['SKU-701', 45]]],
-  ['Valebrook Retail', 'completed', 'rush', 'u-sarah', atDay(-6, 11), [['SKU-104', 25]]],
-  ['Wynfield Trading', 'completed', 'standard', 'u-robert', atDay(-6, 15), [['SKU-307', 80]]],
-  ['Yarrow Distribution', 'completed', 'bulk', 'u-mike', atDay(-7, 10), [['SKU-503', 160]]],
-  ['Zenith Office Co', 'completed', 'standard', 'u-sarah', atDay(-7, 14), [['SKU-404', 90]]],
-]
-
-const notesBySeedIndex: Record<number, string> = {
-  0: 'Customer called twice. Dock 3 closes at 16:00, needs to go out on the afternoon run.',
-  2: 'Tape is short — check the overflow pallet in E2 before ordering more.',
-  4: 'Wrap is out of stock. Hold or substitute with the 400mm roll if customer approves.',
-  9: 'Fragile. Double-box the dock and mark the carton.',
-}
-
-export const orders: Order[] = orderSeeds.map(
-  ([customer, status, priority, assigneeId, dueAt, lines], i) => ({
-    id: `ORD-${String(i + 1).padStart(3, '0')}`,
-    customer,
-    // Orders are placed a couple of days before they come due.
-    placedAt: new Date(new Date(dueAt).getTime() - 42 * 3_600_000).toISOString(),
-    dueAt,
-    status,
-    priority,
-    assigneeId,
-    lines: lines.map(([sku, qty]) => ({ sku, qty })),
-    notes: notesBySeedIndex[i] ?? '',
-  }),
-)
+export const orders: Order[] = generateOrders(NOW, inventory)
 
 export const accountSettings: AccountSettings = {
   companyName: 'Warehouse Management Co.',

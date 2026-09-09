@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   AlertTriangle,
   Boxes,
@@ -6,7 +6,6 @@ import {
   MapPin,
   PackageOpen,
   Pencil,
-  Search,
   TrendingDown,
   X,
 } from 'lucide-react'
@@ -19,6 +18,7 @@ import { EditItemModal } from '@/components/inventory/EditItemModal'
 import { Mono } from '@/components/orders/cells'
 import { formatRelative, itemStockState } from '@/lib/derive'
 import { useStore } from '@/lib/store'
+import { useTopBarSearch } from '@/lib/topbarSearch'
 import { usePersistentState } from '@/lib/usePersistentState'
 import type { InventoryItem } from '@/lib/types'
 import { cn } from '@/lib/cn'
@@ -69,8 +69,14 @@ export default function Inventory() {
     })
   }, [inventory, filters])
 
-  const patch = (next: Partial<InventoryFilters>) =>
-    setFilters((prev) => ({ ...prev, ...next }))
+  const patch = useCallback(
+    (next: Partial<InventoryFilters>) => setFilters((prev) => ({ ...prev, ...next })),
+    [setFilters],
+  )
+
+  const setSearch = useCallback((search: string) => patch({ search }), [patch])
+
+  useTopBarSearch(filters.search, setSearch, 'Search inventory by SKU, name or description')
 
   const isFiltered =
     filters.search !== '' || filters.category !== '' || filters.location !== '' || filters.lowOnly
@@ -129,20 +135,6 @@ export default function Inventory() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2 pb-4">
-        <div className="relative min-w-[240px] flex-1">
-          <Search
-            size={14}
-            className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-ink-muted"
-          />
-          <input
-            value={filters.search}
-            onChange={(e) => patch({ search: e.target.value })}
-            placeholder="Search by SKU, name or description..."
-            aria-label="Search inventory"
-            className="h-9 w-full rounded-md bg-surface pr-3 pl-9 text-[13px] ring-1 ring-hairline transition-colors placeholder:text-ink-muted hover:ring-ink-muted/50 focus:ring-brand focus:outline-none"
-          />
-        </div>
-
         <Select
           value={filters.category}
           placeholder="All categories"

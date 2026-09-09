@@ -2,18 +2,48 @@ import { useCallback, useMemo, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/Button'
-import { LaneTabs } from '@/components/orders/LaneTabs'
+import { StageTabs } from '@/components/orders/StageTabs'
+import { SavedViews } from '@/components/orders/SavedViews'
 import { OrdersToolbar } from '@/components/orders/OrdersToolbar'
 import type { Filters } from '@/components/orders/OrdersToolbar'
 import { OrdersTable } from '@/components/orders/OrdersTable'
 import { BulkActionBar } from '@/components/orders/BulkActionBar'
+import { UndoToast } from '@/components/orders/UndoToast'
 import { OrderDetailsModal } from '@/components/orders/OrderDetailsModal'
-import { LANES, laneCounts, matchesLane, sortForLane } from '@/lib/derive'
+import {
+  LANES,
+  buildSkuIndex,
+  isOverdue,
+  isSameDay,
+  laneCounts,
+  matchesLane,
+  sortForLane,
+} from '@/lib/derive'
 import { useStore } from '@/lib/store'
+import { useTopBarSearch } from '@/lib/topbarSearch'
 import { usePersistentState } from '@/lib/usePersistentState'
-import type { LaneId, Order, OrderStatus } from '@/lib/types'
+import type { LaneId, Order, OrderStatus, SavedView } from '@/lib/types'
 
 const NO_FILTERS: Filters = { search: '', status: '', priority: '', assignee: '' }
+
+const DEFAULT_LANE: LaneId = 'needs_attention'
+
+/* Seeded so the feature is legible on first run, and because "New + Rush" is
+   exactly the combination that gets retyped twenty times a day. */
+const SEED_VIEWS: SavedView[] = [
+  {
+    id: 'view-new-rush',
+    name: 'New · Rush',
+    lane: 'new_unassigned',
+    filters: { search: '', status: '', priority: 'rush', assignee: '' },
+  },
+  {
+    id: 'view-rush-outbound',
+    name: 'Rush · outbound',
+    lane: 'ready_to_ship',
+    filters: { search: '', status: '', priority: 'rush', assignee: '' },
+  },
+]
 
 const DATE = new Intl.DateTimeFormat('en-US', {
   weekday: 'long',
@@ -21,28 +51,47 @@ const DATE = new Intl.DateTimeFormat('en-US', {
   day: 'numeric',
 })
 
-export default function Orders() {
-  const { orders, inventory, users, setStatus, assign, setNotes } = useStore()
+function sameFilters(a: Filters, b: Filters): boolean {
+  return (
+    a.search === b.search &&
+    a.status === b.status &&
+    a.priority === b.priority &&
+    a.assignee === b.assignee
+  )
+}
 
-  // Lane and filters persist. Selection and expansion are per-session.
-  const [lane, setLane] = usePersistentState<LaneId>('orders.lane', 'ship_today')
+export default function Orders() {
+  const { orders, inventory, users, workers, setStatus, assign, restore, setNotes } = useStore()
+
+  // Stage, filters and saved views persist. Selection and expansion are
+  // per-session, because they describe a task in progress, not a preference.
+  const [storedLane, setLane] = usePersistentState<LaneId>('orders.lane', DEFAULT_LANE)
   const [filters, setFilters] = usePersistentState<Filters>('orders.filters', NO_FILTERS)
+  const [views, setViews] = usePersistentState<SavedView[]>('orders.views', SEED_VIEWS)
+
+  // Guards against a stage name persisted by an older build.
+  const lane = LANES.some((l) => l.id === storedLane) ? storedLane : DEFAULT_LANE
 
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
+  const [undo, setUndo] = useState<{ message: string; snapshots: Order[] } | null>(null)
 
-  // A single clock for the whole render, so lane membership and every due
+  // A single clock for the whole render, so stage membership and every ship-by
   // label agree with each other.
   const now = useMemo(() => new Date(), [orders])
 
-  const counts = useMemo(() => laneCounts(orders, now), [orders, now])
+  // Built once per inventory change rather than once per row, which matters at
+  // a couple of hundred orders.
+  const skus = useMemo(() => buildSkuIndex(inventory), [inventory])
+
+  const counts = useMemo(() => laneCounts(orders, now, skus), [orders, now, skus])
 
   const visible = useMemo(() => {
     const needle = filters.search.trim().toLowerCase()
 
     const filtered = orders.filter((order) => {
-      if (!matchesLane(order, lane, now)) return false
+      if (!matchesLane(order, lane, now, skus)) return false
       if (filters.status && order.status !== filters.status) return false
       if (filters.priority && order.priority !== filters.priority) return false
 
@@ -53,11 +102,7 @@ export default function Orders() {
       }
 
       if (needle) {
-        const haystack = [
-          order.id,
-          order.customer,
-          ...order.lines.map((line) => line.sku),
-        ]
+        const haystack = [order.id, order.customer, ...order.lines.map((line) => line.sku)]
           .join(' ')
           .toLowerCase()
         if (!haystack.includes(needle)) return false
@@ -67,21 +112,74 @@ export default function Orders() {
     })
 
     return sortForLane(filtered, lane)
-  }, [orders, lane, filters, now])
+  }, [orders, lane, filters, now, skus])
+
+  /* Urgency stated as a number at the top of the stage, so the pressure is
+     legible before anyone reads a single row. */
+  const urgency = useMemo(() => {
+    let overdue = 0
+    let today = 0
+    for (const order of visible) {
+      if (isOverdue(order, now)) overdue += 1
+      else if (isSameDay(new Date(order.dueAt), now)) today += 1
+    }
+    return { overdue, today }
+  }, [visible, now])
+
+  const clearSelection = useCallback(() => setSelected(new Set()), [])
 
   const patchFilters = useCallback(
     (patch: Partial<Filters>) => setFilters((prev) => ({ ...prev, ...patch })),
     [setFilters],
   )
 
+  const setSearch = useCallback(
+    (search: string) => patchFilters({ search }),
+    [patchFilters],
+  )
+
+  useTopBarSearch(filters.search, setSearch, 'Search orders by ID, customer or SKU')
+
   const changeLane = useCallback(
     (next: LaneId) => {
       setLane(next)
-      // A selection made in one lane rarely means the same thing in another.
-      setSelected(new Set())
+      // A selection made in one stage rarely means the same thing in another.
+      clearSelection()
       setExpandedId(null)
     },
-    [setLane],
+    [setLane, clearSelection],
+  )
+
+  const activeViewId = useMemo(() => {
+    const match = views.find((view) => view.lane === lane && sameFilters(view.filters, filters))
+    return match?.id ?? null
+  }, [views, lane, filters])
+
+  const isFiltered = !sameFilters(filters, NO_FILTERS)
+
+  const applyView = useCallback(
+    (view: SavedView) => {
+      setLane(view.lane)
+      setFilters(view.filters)
+      clearSelection()
+      setExpandedId(null)
+    },
+    [setLane, setFilters, clearSelection],
+  )
+
+  const saveView = useCallback(
+    (name: string) => {
+      setViews((prev) => [
+        ...prev,
+        { id: `view-${Date.now().toString(36)}`, name, lane, filters },
+      ])
+    },
+    [setViews, lane, filters],
+  )
+
+  const deleteView = useCallback(
+    (id: string) => setViews((prev) => prev.filter((view) => view.id !== id)),
+    [setViews],
   )
 
   const toggleSelect = useCallback((id: string) => {
@@ -93,33 +191,59 @@ export default function Orders() {
     })
   }, [])
 
+  const selectAll = useCallback(() => {
+    setSelected(new Set(visible.map((order) => order.id)))
+  }, [visible])
+
   const toggleAll = useCallback(
     (checked: boolean) => {
-      setSelected(checked ? new Set(visible.map((order) => order.id)) : new Set())
+      if (checked) selectAll()
+      else clearSelection()
     },
-    [visible],
+    [selectAll, clearSelection],
   )
 
-  const selectedIds = useMemo(
-    () => visible.filter((order) => selected.has(order.id)).map((order) => order.id),
+  const selectedOrders = useMemo(
+    () => visible.filter((order) => selected.has(order.id)),
     [visible, selected],
   )
 
+  const selectedIds = useMemo(
+    () => selectedOrders.map((order) => order.id),
+    [selectedOrders],
+  )
+
+  const plural = (n: number) => `${n} ${n === 1 ? 'order' : 'orders'}`
+
   const bulkStatus = useCallback(
     (status: OrderStatus) => {
+      const snapshots = selectedOrders.map((order) => ({ ...order }))
+      const label =
+        status === 'packed' ? 'marked packed' : status === 'shipped' ? 'marked shipped' : 'completed'
+
       setStatus(selectedIds, status)
-      setSelected(new Set())
+      setUndo({ message: `${plural(snapshots.length)} ${label}`, snapshots })
+      clearSelection()
     },
-    [selectedIds, setStatus],
+    [selectedOrders, selectedIds, setStatus, clearSelection],
   )
 
   const bulkAssign = useCallback(
     (assigneeId: string) => {
+      const snapshots = selectedOrders.map((order) => ({ ...order }))
+      const name = users.find((user) => user.id === assigneeId)?.name ?? 'worker'
+
       assign(selectedIds, assigneeId)
-      setSelected(new Set())
+      setUndo({ message: `${plural(snapshots.length)} assigned to ${name}`, snapshots })
+      clearSelection()
     },
-    [selectedIds, assign],
+    [selectedOrders, selectedIds, assign, users, clearSelection],
   )
+
+  const runUndo = useCallback(() => {
+    if (undo) restore(undo.snapshots)
+    setUndo(null)
+  }, [undo, restore])
 
   const openOrder: Order | null = openId
     ? (orders.find((order) => order.id === openId) ?? null)
@@ -127,19 +251,13 @@ export default function Orders() {
 
   const laneMeta = LANES.find((l) => l.id === lane)!
 
-  const isFiltered =
-    filters.search !== '' ||
-    filters.status !== '' ||
-    filters.priority !== '' ||
-    filters.assignee !== ''
-
-  /* An empty lane and an over-filtered lane mean different things. Telling a
-     picker "the floor is clear" when they simply mistyped a SKU is worse than
+  /* An empty stage and an over-filtered stage mean different things. Telling a
+     picker "nothing is stuck" when they simply mistyped a SKU is worse than
      saying nothing. */
   const empty = isFiltered
     ? {
         title: 'No matches in this view',
-        body: `Nothing in ${laneMeta.label} matches these filters. Clear them, or try another view.`,
+        body: `Nothing in ${laneMeta.label} matches these filters. Clear them, or try another stage.`,
         action: <Button onClick={() => setFilters(NO_FILTERS)}>Clear filters</Button>,
       }
     : { title: 'Nothing here', body: laneMeta.empty }
@@ -152,7 +270,21 @@ export default function Orders() {
           <>
             <span>{DATE.format(now)}</span>
             <span className="text-ink-muted">·</span>
-            <span>{laneMeta.description}</span>
+            {urgency.overdue > 0 ? (
+              <>
+                <span className="font-medium text-risk-text">{urgency.overdue} overdue</span>
+                {urgency.today > 0 && (
+                  <>
+                    <span className="text-ink-muted">·</span>
+                    <span>{urgency.today} due today</span>
+                  </>
+                )}
+              </>
+            ) : urgency.today > 0 ? (
+              <span>{urgency.today} due today</span>
+            ) : (
+              <span>{laneMeta.description}</span>
+            )}
           </>
         }
         actions={
@@ -162,12 +294,21 @@ export default function Orders() {
         }
       />
 
-      <LaneTabs active={lane} counts={counts} onChange={changeLane} />
+      <StageTabs active={lane} counts={counts} onChange={changeLane} />
+
+      <SavedViews
+        views={views}
+        activeId={activeViewId}
+        canSave={isFiltered && activeViewId === null}
+        onApply={applyView}
+        onSave={saveView}
+        onDelete={deleteView}
+      />
 
       <OrdersToolbar
         filters={filters}
         onChange={patchFilters}
-        users={users}
+        users={workers}
         shown={visible.length}
         total={counts[lane]}
       />
@@ -175,7 +316,7 @@ export default function Orders() {
       <OrdersTable
         orders={visible}
         users={users}
-        inventory={inventory}
+        skus={skus}
         now={now}
         selected={selected}
         expandedId={expandedId}
@@ -193,16 +334,28 @@ export default function Orders() {
 
       <BulkActionBar
         count={selectedIds.length}
-        users={users}
+        totalInStage={visible.length}
+        lane={lane}
+        users={workers}
         onStatus={bulkStatus}
         onAssign={bulkAssign}
-        onClear={() => setSelected(new Set())}
+        onSelectAll={selectAll}
+        onClear={clearSelection}
       />
+
+      {/* Never both at once: clearing the selection retires the bar first. */}
+      {selectedIds.length === 0 && (
+        <UndoToast
+          message={undo?.message ?? null}
+          onUndo={runUndo}
+          onDismiss={() => setUndo(null)}
+        />
+      )}
 
       <OrderDetailsModal
         order={openOrder}
-        users={users}
-        inventory={inventory}
+        users={workers}
+        skus={skus}
         now={now}
         onClose={() => setOpenId(null)}
         onStatus={(id, status) => setStatus([id], status)}

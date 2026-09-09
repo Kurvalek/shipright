@@ -1,8 +1,6 @@
 import { NavLink } from 'react-router-dom'
-import { ClipboardList, LogOut, Package, Settings as SettingsIcon } from 'lucide-react'
-import { Logo } from './Logo'
-import { Avatar } from '@/components/ui/Avatar'
-import { currentUser } from '@/lib/mockData'
+import { ClipboardList, ChevronsUpDown, Package, Settings as SettingsIcon } from 'lucide-react'
+import { useStore } from '@/lib/store'
 import { cn } from '@/lib/cn'
 
 const nav = [
@@ -11,53 +9,49 @@ const nav = [
   { to: '/settings', label: 'Settings', icon: SettingsIcon },
 ]
 
+/* Sits directly on the shell with no fill or divider of its own. The content
+   pane's edge is the only line needed to separate the two. */
 export function Sidebar() {
-  return (
-    <aside className="flex w-60 shrink-0 flex-col border-r border-hairline bg-sidebar">
-      <div className="px-5 py-[18px]">
-        <Logo />
-      </div>
+  const { account } = useStore()
 
-      <nav className="flex flex-col gap-0.5 px-3">
+  return (
+    <aside className="flex w-60 shrink-0 flex-col pb-3 pl-3">
+      <button
+        type="button"
+        className="mb-4 flex items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors hover:bg-black/[0.035]"
+      >
+        <span className="grid size-7 shrink-0 place-items-center rounded-md bg-mauve text-[11px] font-semibold text-brand">
+          {account.companyName.slice(0, 2).toUpperCase()}
+        </span>
+        <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink">
+          {account.companyName}
+        </span>
+        <ChevronsUpDown size={13} className="shrink-0 text-ink-muted" />
+      </button>
+
+      <nav className="flex flex-col gap-0.5">
         {nav.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
             className={({ isActive }) =>
               cn(
-                'flex items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] transition-colors',
+                'flex items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-[13px] transition-colors',
                 isActive
-                  ? 'bg-surface font-medium text-ink shadow-xs ring-1 ring-hairline'
+                  ? 'bg-mauve font-medium text-brand'
                   : 'text-ink-secondary hover:bg-black/[0.035] hover:text-ink',
               )
             }
           >
             {({ isActive }) => (
               <>
-                <Icon size={16} className={isActive ? 'text-ink' : 'text-ink-muted'} />
+                <Icon size={16} className={isActive ? 'text-brand' : 'text-ink-muted'} />
                 {label}
               </>
             )}
           </NavLink>
         ))}
       </nav>
-
-      <div className="mt-auto border-t border-hairline p-3">
-        <div className="flex items-center gap-2.5 px-1.5 py-1">
-          <Avatar name={currentUser.name} size="md" className="bg-white ring-1 ring-hairline" />
-          <div className="min-w-0">
-            <p className="truncate text-[13px] font-medium text-ink">{currentUser.name}</p>
-            <p className="text-[11px] text-ink-muted capitalize">{currentUser.role}</p>
-          </div>
-        </div>
-        <button
-          type="button"
-          className="mt-1 flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] text-ink-secondary transition-colors hover:bg-black/[0.035] hover:text-ink"
-        >
-          <LogOut size={16} className="text-ink-muted" />
-          Log out
-        </button>
-      </div>
     </aside>
   )
 }

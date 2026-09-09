@@ -22,12 +22,16 @@ interface Store {
   orders: Order[]
   inventory: InventoryItem[]
   users: User[]
+  /** Who can actually be handed an order. Admins and managers do not pick. */
+  workers: User[]
   account: AccountSettings
   warehouse: WarehouseSettings
   notifications: NotificationSettings
 
   setStatus: (ids: string[], status: OrderStatus) => void
   assign: (ids: string[], assigneeId: string | null) => void
+  /** Puts a set of orders back exactly as they were, to back out a bulk action. */
+  restore: (snapshots: Order[]) => void
   setNotes: (id: string, notes: string) => void
   updateItem: (sku: string, patch: Partial<InventoryItem>) => void
   removeUser: (id: string) => void
@@ -59,6 +63,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setOrders((prev) =>
       prev.map((order) => (target.has(order.id) ? { ...order, assigneeId } : order)),
     )
+  }, [])
+
+  const restore = useCallback((snapshots: Order[]) => {
+    const byId = new Map(snapshots.map((order) => [order.id, order]))
+    setOrders((prev) => prev.map((order) => byId.get(order.id) ?? order))
   }, [])
 
   const setNotes = useCallback((id: string, notes: string) => {
@@ -94,16 +103,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setNotificationsState((prev) => ({ ...prev, ...patch }))
   }, [])
 
+  const workers = useMemo(() => users.filter((user) => user.role === 'worker'), [users])
+
   const value = useMemo<Store>(
     () => ({
       orders,
       inventory,
       users,
+      workers,
       account,
       warehouse,
       notifications,
       setStatus,
       assign,
+      restore,
       setNotes,
       updateItem,
       removeUser,
@@ -115,11 +128,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       orders,
       inventory,
       users,
+      workers,
       account,
       warehouse,
       notifications,
       setStatus,
       assign,
+      restore,
       setNotes,
       updateItem,
       removeUser,
