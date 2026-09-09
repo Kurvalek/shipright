@@ -1,9 +1,57 @@
-@import '@fontsource/narnoor/latin-400.css';
-@import '@fontsource/narnoor/latin-500.css';
-@import '@fontsource/narnoor/latin-600.css';
-@import '@fontsource/narnoor/latin-700.css';
-
 @import 'tailwindcss';
+
+/* Narnoor is drawn for Gurmukhi, so it reserves a 131.4% ascent for matras
+   above the headline against a 23.7% descent. Latin text has nothing up there,
+   so every glyph sits low in a vertically centred box — buttons, pills, inputs
+   and table cells all read as if the label had slipped.
+
+   Overriding the metrics fixes it once, everywhere, instead of nudging padding
+   on each component. Setting ascent minus descent equal to the 73.5% cap
+   height puts the content box's centre on the middle of a capital, which is
+   where the eye expects it, and it holds at any font size or line height. */
+@font-face {
+  font-family: 'Narnoor';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('@fontsource/narnoor/files/narnoor-latin-400-normal.woff2') format('woff2');
+  ascent-override: 97.2%;
+  descent-override: 23.7%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'Narnoor';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('@fontsource/narnoor/files/narnoor-latin-500-normal.woff2') format('woff2');
+  ascent-override: 97.2%;
+  descent-override: 23.7%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'Narnoor';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('@fontsource/narnoor/files/narnoor-latin-600-normal.woff2') format('woff2');
+  ascent-override: 97.2%;
+  descent-override: 23.7%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'Narnoor';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('@fontsource/narnoor/files/narnoor-latin-700-normal.woff2') format('woff2');
+  ascent-override: 97.2%;
+  descent-override: 23.7%;
+  line-gap-override: 0%;
+}
 
 @theme {
   /* Four colours carry the whole product: a warm shell, a mauve tint, oxblood
