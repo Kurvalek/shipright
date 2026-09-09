@@ -2,7 +2,7 @@ import { ChevronRight, MoreHorizontal } from 'lucide-react'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { Button } from '@/components/ui/Button'
 import { Menu } from '@/components/ui/Menu'
-import { AssigneeCell, DueCell, Mono, PriorityPill, StatusPill, StockIndicator } from './cells'
+import { AssigneeCell, DueCell, Mono, PriorityFlag, StatusSteps, StockIndicator } from './cells'
 import { LineStockTable } from './LineStockTable'
 import { STATUS_META, dueLabel, nextAction, orderStock } from '@/lib/derive'
 import type { SkuIndex } from '@/lib/derive'
@@ -60,7 +60,7 @@ export function OrderRow({
           />
         </td>
 
-        <td className="py-3 pr-4">
+        <td className="py-2.5 pr-4">
           {/* A real button so the expansion is reachable without a pointer.
               Clicking anywhere on the row does the same thing. */}
           <button
@@ -84,30 +84,30 @@ export function OrderRow({
           </button>
         </td>
 
-        <td className="max-w-[220px] truncate py-3 pr-4 text-[13px] text-ink">{order.customer}</td>
+        <td className="max-w-[220px] truncate py-2.5 pr-4 text-[13px] text-ink">{order.customer}</td>
 
-        <td className="py-3 pr-4">
+        <td className="py-2.5 pr-4">
           <DueCell due={due} />
         </td>
 
-        <td className="py-3 pr-4">
-          <StatusPill status={order.status} />
+        <td className="py-2.5 pr-4">
+          <StatusSteps status={order.status} />
         </td>
 
-        <td className="py-3 pr-4">
-          <PriorityPill priority={order.priority} />
+        <td className="py-2.5 pr-4">
+          <PriorityFlag priority={order.priority} />
         </td>
 
-        <td className="py-3 pr-4">
+        <td className="py-2.5 pr-4">
           <AssigneeCell user={assignee} />
         </td>
 
-        <td className="tnum py-3 pr-4 text-[13px] whitespace-nowrap text-ink-secondary">
+        <td className="tnum py-2.5 pr-4 text-[13px] whitespace-nowrap text-ink-secondary">
           {order.lines.length} {order.lines.length === 1 ? 'line' : 'lines'}
           <span className="text-ink-muted"> · {itemCount}</span>
         </td>
 
-        <td className="py-3 pr-4">
+        <td className="py-2.5 pr-4">
           <StockIndicator state={stock.state} lowCount={stock.lowCount} outCount={stock.outCount} />
         </td>
 

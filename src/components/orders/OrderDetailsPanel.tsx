@@ -3,7 +3,7 @@ import { ArrowRight } from 'lucide-react'
 import { SidePanel } from '@/components/ui/SidePanel'
 import { Button } from '@/components/ui/Button'
 import { Label, Select, Textarea } from '@/components/ui/Field'
-import { Mono, DueCell, PriorityPill, StatusPill, StockIndicator } from './cells'
+import { Mono, DueCell, PriorityFlag, StatusPill, StockIndicator } from './cells'
 import { LineStockTable } from './LineStockTable'
 import { StatusTimeline } from './StatusTimeline'
 import { dueLabel, formatTimestamp, nextAction, orderStock } from '@/lib/derive'
@@ -51,8 +51,8 @@ export function OrderDetailsPanel({
       eyebrow={
         <>
           <Mono className="text-ink-secondary">{order.id}</Mono>
-          <span className="text-ink-muted">·</span>
-          <PriorityPill priority={order.priority} />
+          {/* No separator: the flag's own rule already divides it from the ID. */}
+          <PriorityFlag priority={order.priority} />
         </>
       }
       footer={

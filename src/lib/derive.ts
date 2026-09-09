@@ -242,11 +242,14 @@ export const STATUS_META: Record<
   },
 }
 
-export const PRIORITY_META: Record<Priority, { label: string; className: string }> = {
-  // Rush is the only priority that should catch the eye across a full table.
-  rush: { label: 'Rush', className: 'bg-risk-fill text-risk-text' },
-  standard: { label: 'Standard', className: 'bg-neutral-fill text-neutral-text' },
-  bulk: { label: 'Bulk', className: 'bg-transparent text-ink-secondary ring-1 ring-hairline' },
+/* A rule and a word rather than a filled chip. Weighted so Rush is the only
+   priority that carries across a full table: amber, then the muted violet that
+   already means "in flight" elsewhere, then grey for the default case. The bars
+   run brighter than the labels, which have to hold their contrast on white. */
+export const PRIORITY_META: Record<Priority, { label: string; bar: string; text: string }> = {
+  rush: { label: 'Rush', bar: 'bg-risk-edge', text: 'text-risk-text' },
+  standard: { label: 'Standard', bar: 'bg-mauve', text: 'text-ink-secondary' },
+  bulk: { label: 'Bulk', bar: 'bg-progress-text', text: 'text-progress-text' },
 }
 
 /* The single most likely next step for an order. `label` is for the row, where

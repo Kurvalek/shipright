@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { AlertTriangle, Plus } from 'lucide-react'
 import { Pill } from '@/components/ui/Pill'
 import { Avatar } from '@/components/ui/Avatar'
-import { PRIORITY_META, STATUS_META } from '@/lib/derive'
+import { ORDER_FLOW, PRIORITY_META, STATUS_META } from '@/lib/derive'
 import type { DueLabel, Fulfillment, OrderStatus, Priority, User } from '@/lib/types'
 import { cn } from '@/lib/cn'
 
@@ -15,9 +15,45 @@ export function StatusPill({ status }: { status: OrderStatus }) {
   )
 }
 
-export function PriorityPill({ priority }: { priority: Priority }) {
+/* A step bar under the stage name. A name on its own does not say how far along
+   an order is, and it asks the reader to have memorised the order of the five
+   stages; a filled run says it without being read. */
+export function StatusSteps({ status }: { status: OrderStatus }) {
+  const reached = ORDER_FLOW.indexOf(status) + 1
+
+  return (
+    <span className="inline-flex flex-col gap-1">
+      {/* Decorative. The stage is named directly underneath, so a screen reader
+          gets it from the label rather than from five anonymous segments. */}
+      <span aria-hidden className="flex items-center gap-[3px]">
+        {ORDER_FLOW.map((step, i) => (
+          <span
+            key={step}
+            className={cn('h-[5px] w-4 rounded-full', i < reached ? 'bg-brand' : 'bg-mauve')}
+          />
+        ))}
+      </span>
+      <span className="text-[13px] whitespace-nowrap text-ink">{STATUS_META[status].label}</span>
+    </span>
+  )
+}
+
+export function PriorityFlag({ priority }: { priority: Priority }) {
   const meta = PRIORITY_META[priority]
-  return <Pill className={meta.className}>{meta.label}</Pill>
+
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span className={cn('h-3.5 w-[3px] shrink-0 rounded-full', meta.bar)} />
+      <span
+        className={cn(
+          'text-[11.5px] font-semibold tracking-[0.06em] uppercase whitespace-nowrap',
+          meta.text,
+        )}
+      >
+        {meta.label}
+      </span>
+    </span>
+  )
 }
 
 const dueTone = {

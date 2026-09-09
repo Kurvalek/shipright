@@ -10,7 +10,7 @@ const columns = [
   'Order',
   'Customer',
   'Ship by',
-  'Status',
+  'Status (step)',
   'Priority',
   'Assignee',
   'Items',
