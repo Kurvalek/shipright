@@ -112,7 +112,7 @@ export function OrderDetailsModal({
 
         <div>
           <Label>Order items</Label>
-          <div className="rounded-lg border border-hairline px-4 py-2">
+          <div className="rounded-table border border-hairline px-4 py-2">
             <LineStockTable lines={stock.lines} />
           </div>
         </div>

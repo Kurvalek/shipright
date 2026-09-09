@@ -167,7 +167,7 @@ export function OrderRow({
       {expanded && (
         <tr className="border-b border-hairline-subtle bg-surface-sunken last:border-0">
           <td colSpan={ORDER_COLUMN_COUNT} className="px-5 pt-1 pb-5">
-            <div className="rounded-lg border border-hairline bg-surface p-4">
+            <div className="rounded-table border border-hairline bg-surface p-4">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                 <p className="label-micro">Line items and stock</p>
                 <div className="flex items-center gap-2">

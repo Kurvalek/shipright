@@ -194,7 +194,7 @@ export default function Inventory() {
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-card border border-hairline bg-surface">
+      <div className="overflow-hidden rounded-table border border-hairline bg-surface">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[980px] border-collapse">
             <thead>

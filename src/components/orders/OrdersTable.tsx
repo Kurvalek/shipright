@@ -50,7 +50,7 @@ export function OrdersTable({
   const allSelected = orders.length > 0 && selectedHere === orders.length
 
   return (
-    <div className="overflow-hidden rounded-card border border-hairline bg-surface">
+    <div className="overflow-hidden rounded-table border border-hairline bg-surface">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[1080px] border-collapse">
           <thead>

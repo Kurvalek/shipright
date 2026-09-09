@@ -109,6 +109,8 @@
   --radius-card: 10px;
   /* The floating content pane. */
   --radius-shell: 14px;
+  /* Data tables sit squarer than cards, so the grid reads as a grid. */
+  --radius-table: 4px;
 }
 
 @keyframes fade {
