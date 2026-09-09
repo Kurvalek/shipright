@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Plus } from 'lucide-react'
-import { PageHeader } from '@/components/layout/PageHeader'
+import { HeaderStat, PageHeader } from '@/components/layout/PageHeader'
 import { PaneDock } from '@/components/layout/PaneDock'
 import { Button } from '@/components/ui/Button'
 import { StageTabs } from '@/components/orders/StageTabs'
@@ -28,12 +28,6 @@ import type { LaneId, Order, OrderStatus } from '@/lib/types'
 const NO_FILTERS: Filters = { search: '', status: '', priority: '', assignee: '' }
 
 const DEFAULT_LANE: LaneId = 'needs_attention'
-
-const DATE = new Intl.DateTimeFormat('en-US', {
-  weekday: 'long',
-  month: 'long',
-  day: 'numeric',
-})
 
 function sameFilters(a: Filters, b: Filters): boolean {
   return (
@@ -97,17 +91,20 @@ export default function Orders() {
     return sortForLane(filtered, lane)
   }, [orders, lane, filters, now, skus])
 
-  /* Urgency stated as a number at the top of the stage, so the pressure is
-     legible before anyone reads a single row. */
+  /* Counted across the whole board, not the open stage, because these sit above
+     the tabs: a number that changed every time you switched tabs would be
+     reporting on the control directly beneath it. Shipped and completed orders
+     carry no pressure, so they are excluded. */
   const urgency = useMemo(() => {
     let overdue = 0
     let today = 0
-    for (const order of visible) {
+    for (const order of orders) {
+      if (order.status === 'shipped' || order.status === 'completed') continue
       if (isOverdue(order, now)) overdue += 1
       else if (isSameDay(new Date(order.dueAt), now)) today += 1
     }
     return { overdue, today }
-  }, [visible, now])
+  }, [orders, now])
 
   const clearSelection = useCallback(() => setSelected(new Set()), [])
 
@@ -220,25 +217,10 @@ export default function Orders() {
     <>
       <PageHeader
         title="Orders"
-        meta={
+        stats={
           <>
-            <span>{DATE.format(now)}</span>
-            <span className="text-ink-muted">·</span>
-            {urgency.overdue > 0 ? (
-              <>
-                <span className="font-medium text-risk-text">{urgency.overdue} overdue</span>
-                {urgency.today > 0 && (
-                  <>
-                    <span className="text-ink-muted">·</span>
-                    <span>{urgency.today} due today</span>
-                  </>
-                )}
-              </>
-            ) : urgency.today > 0 ? (
-              <span>{urgency.today} due today</span>
-            ) : (
-              <span>{laneMeta.description}</span>
-            )}
+            <HeaderStat label="Overdue" value={urgency.overdue} tone="risk" />
+            <HeaderStat label="Due today" value={urgency.today} />
           </>
         }
         actions={

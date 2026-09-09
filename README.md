@@ -23,7 +23,7 @@ Other scripts: `npm run build`, `npm run preview`, `npm run typecheck`.
 
 **Inline stock and a can-fulfill signal.** A per-row indicator answers whether the order can actually ship: green when every line is covered, amber when filling it drops a SKU to or below its reorder point, red when there is not enough on the shelf. Expanding a row shows each SKU with required against on-hand, its bin, and its own flag. The data already lived on the Inventory screen; this joins it onto the order.
 
-**Visible urgency.** The Ship by column reads as relative urgency rather than a raw timestamp, and the page header states the pressure as a number — how many in this stage are overdue, and how many are due today.
+**Visible urgency.** The Ship by column reads as relative urgency rather than a raw timestamp, and the page header states the pressure as two numbers sized to be read first: how many open orders are overdue, and how many are due today. They are counted across the whole board rather than the open stage, because they sit above the tabs — a number that changed every time you switched tabs would be reporting on the control directly beneath it.
 
 **Status reads as progress, not a label.** The Status column is a five-segment step bar with the stage named underneath, so how far along an order is comes across without the reader having memorised the order of the stages. Priority is a coloured rule and a word rather than a filled chip, weighted so Rush is the only one that carries across a full table and Standard stays quiet.
 
