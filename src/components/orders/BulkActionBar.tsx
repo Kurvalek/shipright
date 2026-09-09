@@ -8,7 +8,7 @@ import type { BulkAction } from '@/lib/derive'
 
 /* The single biggest fulfillment-time lever: one action for a whole selection
    instead of opening N modals. The move the current stage exists to perform is
-   promoted to the primary button, so "Ready to ship → select all → Mark
+   promoted to the primary button, so "Packed → select all → Mark as
    shipped" is three clicks whether the selection is 3 orders or 84. */
 export function BulkActionBar({
   count,
@@ -34,19 +34,12 @@ export function BulkActionBar({
 
   const [primary, ...secondary] = LANES.find((l) => l.id === lane)?.bulkActions ?? []
 
-  const statusFor: Record<Exclude<BulkAction, 'assign'>, OrderStatus> = {
-    start: 'in_progress',
-    packed: 'packed',
-    shipped: 'shipped',
-    completed: 'completed',
-  }
-
   const meta: Record<BulkAction, { label: string; icon: ReactNode }> = {
     assign: { label: 'Assign to...', icon: <UserPlus size={14} /> },
-    start: { label: 'Start picking', icon: <PlayCircle size={14} /> },
-    packed: { label: 'Mark packed', icon: <Boxes size={14} /> },
-    shipped: { label: 'Mark shipped', icon: <Truck size={14} /> },
-    completed: { label: 'Complete', icon: <Check size={14} /> },
+    in_progress: { label: 'Mark as in progress', icon: <PlayCircle size={14} /> },
+    packed: { label: 'Mark as packed', icon: <Boxes size={14} /> },
+    shipped: { label: 'Mark as shipped', icon: <Truck size={14} /> },
+    completed: { label: 'Mark as completed', icon: <Check size={14} /> },
   }
 
   function renderAction(action: BulkAction, variant: 'inverse' | 'ghost-inverse') {
@@ -76,7 +69,7 @@ export function BulkActionBar({
         size="sm"
         variant={variant}
         icon={meta[action].icon}
-        onClick={() => onStatus(statusFor[action])}
+        onClick={() => onStatus(action)}
       >
         {meta[action].label}
       </Button>

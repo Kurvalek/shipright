@@ -28,12 +28,13 @@ export function isOverdue(order: Order, now: Date): boolean {
   return isActive(order) && new Date(order.dueAt).getTime() < now.getTime()
 }
 
-/* The tabs follow the physical path an order takes across the floor, so a
-   worker only ever reads the one stage they are standing in. Needs attention
-   is the exception: it cuts across stages to collect the orders that will not
-   move on their own. */
+/* One vocabulary. Each tab is named after the status it holds, so the tab, the
+   pill in the row and the button that moves an order there all use the same
+   word — nobody has to learn that "Ready to ship" means "Packed". Needs
+   attention is the one tab that is not a status, because it cuts across them to
+   collect the orders that will not move on their own. */
 /** Bulk actions offered in a stage. The first is promoted to primary. */
-export type BulkAction = 'assign' | 'start' | 'packed' | 'shipped' | 'completed'
+export type BulkAction = 'assign' | Exclude<OrderStatus, 'new'>
 
 export const LANES: Array<{
   id: LaneId
@@ -41,7 +42,7 @@ export const LANES: Array<{
   description: string
   empty: string
   /* Only the moves that make sense from where these orders already are. A
-     packed order has no business being offered "Mark packed" again. */
+     packed order has no business being offered "Mark as packed" again. */
   bulkActions: BulkAction[]
 }> = [
   {
@@ -53,32 +54,40 @@ export const LANES: Array<{
     bulkActions: ['assign', 'packed', 'shipped'],
   },
   {
-    id: 'new_unassigned',
-    label: 'New / unassigned',
-    description: 'Nobody has picked these up yet',
-    empty: 'Every open order has a name on it.',
-    bulkActions: ['assign', 'start'],
+    id: 'new',
+    label: 'New',
+    description: 'Just in, nobody has picked them up yet',
+    empty: 'No new orders waiting.',
+    bulkActions: ['assign', 'in_progress'],
   },
   {
-    id: 'ready_to_pack',
-    label: 'Ready to pack',
-    description: 'Assigned and picked, waiting to be boxed',
-    empty: 'Nothing waiting to be packed.',
+    id: 'in_progress',
+    label: 'In progress',
+    description: 'Being picked, waiting to be boxed',
+    empty: 'Nothing is being worked on.',
     bulkActions: ['packed', 'assign'],
   },
   {
-    id: 'ready_to_ship',
-    label: 'Ready to ship',
-    description: 'Packed and waiting on a carrier',
+    id: 'packed',
+    label: 'Packed',
+    description: 'Boxed and waiting on a carrier',
     empty: 'No packed orders waiting. Nothing is backing up.',
     bulkActions: ['shipped', 'assign'],
   },
   {
-    id: 'completed',
-    label: 'Completed',
-    description: 'Shipped and closed out, newest first',
+    id: 'shipped',
+    label: 'Shipped',
+    description: 'With the carrier, not yet closed out',
     empty: 'Nothing has shipped yet.',
     bulkActions: ['completed'],
+  },
+  {
+    id: 'completed',
+    label: 'Completed',
+    description: 'Closed out, newest first',
+    empty: 'Nothing has been closed out yet.',
+    // The end of the flow. There is no move left to offer.
+    bulkActions: [],
   },
 ]
 
@@ -90,28 +99,22 @@ export function buildSkuIndex(inventory: InventoryItem[]): SkuIndex {
 }
 
 export function matchesLane(order: Order, lane: LaneId, now: Date, skus: SkuIndex): boolean {
-  switch (lane) {
-    case 'needs_attention':
-      // Late, or cannot be picked complete off the shelf. Either way a person
-      // has to make a call before it ships.
-      return isActive(order) && (isOverdue(order, now) || orderStock(order, skus).state === 'out')
-    case 'new_unassigned':
-      return isActive(order) && (order.status === 'new' || order.assigneeId === null)
-    case 'ready_to_pack':
-      return order.status === 'in_progress'
-    case 'ready_to_ship':
-      return order.status === 'packed'
-    case 'completed':
-      return order.status === 'shipped' || order.status === 'completed'
+  if (lane === 'needs_attention') {
+    // Late, or cannot be picked complete off the shelf. Either way a person has
+    // to make a call before it ships.
+    return isActive(order) && (isOverdue(order, now) || orderStock(order, skus).state === 'out')
   }
+  // Every other tab is its status, which is why they share a name.
+  return order.status === lane
 }
 
 export function laneCounts(orders: Order[], now: Date, skus: SkuIndex): Record<LaneId, number> {
   const counts = {
     needs_attention: 0,
-    new_unassigned: 0,
-    ready_to_pack: 0,
-    ready_to_ship: 0,
+    new: 0,
+    in_progress: 0,
+    packed: 0,
+    shipped: 0,
     completed: 0,
   } satisfies Record<LaneId, number>
 
@@ -260,13 +263,13 @@ export function nextAction(
 ): { label: string; long: string; next: OrderStatus } | null {
   switch (status) {
     case 'new':
-      return { label: 'Start', long: 'Start picking', next: 'in_progress' }
+      return { label: 'Mark in progress', long: 'Mark as in progress', next: 'in_progress' }
     case 'in_progress':
       return { label: 'Mark packed', long: 'Mark as packed', next: 'packed' }
     case 'packed':
       return { label: 'Mark shipped', long: 'Mark as shipped', next: 'shipped' }
     case 'shipped':
-      return { label: 'Complete', long: 'Complete order', next: 'completed' }
+      return { label: 'Mark completed', long: 'Mark as completed', next: 'completed' }
     case 'completed':
       return null
   }
@@ -286,7 +289,7 @@ export function sortForLane(orders: Order[], lane: LaneId): Order[] {
     new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime()
 
   // Closed work reads best newest-first; open work reads best most-urgent-first.
-  if (lane === 'completed') {
+  if (lane === 'shipped' || lane === 'completed') {
     return [...orders].sort((a, b) => -byDueAsc(a, b))
   }
   return [...orders].sort(byDueAsc)

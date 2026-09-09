@@ -79,7 +79,7 @@ const BUCKETS: Bucket[] = [
   // express orders need to land on one packer in a single action.
   { status: 'new', count: 86, unassigned: 86, rush: 52, overdue: 6, blocked: 6, lowStock: 6 },
   { status: 'in_progress', count: 41, unassigned: 0, rush: 14, overdue: 5, blocked: 4, lowStock: 3 },
-  // Ready to ship. The 84 that get cleared in one click.
+  // Packed. The 84 that get cleared in one click.
   { status: 'packed', count: 84, unassigned: 0, rush: 25, overdue: 6, blocked: 4, lowStock: 4 },
   // Nothing that already shipped can have been unfulfillable.
   { status: 'shipped', count: 22, unassigned: 0, rush: 6, overdue: 0, blocked: 0, lowStock: 2 },

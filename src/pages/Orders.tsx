@@ -12,6 +12,7 @@ import { UndoToast } from '@/components/orders/UndoToast'
 import { OrderDetailsPanel } from '@/components/orders/OrderDetailsPanel'
 import {
   LANES,
+  STATUS_META,
   buildSkuIndex,
   isOverdue,
   isSameDay,
@@ -170,11 +171,12 @@ export default function Orders() {
   const bulkStatus = useCallback(
     (status: OrderStatus) => {
       const snapshots = selectedOrders.map((order) => ({ ...order }))
-      const label =
-        status === 'packed' ? 'marked packed' : status === 'shipped' ? 'marked shipped' : 'completed'
-
       setStatus(selectedIds, status)
-      setUndo({ message: `${plural(snapshots.length)} ${label}`, snapshots })
+      setUndo({
+        // Same word the tab and the pill use, so the report matches the action.
+        message: `${plural(snapshots.length)} marked ${STATUS_META[status].label.toLowerCase()}`,
+        snapshots,
+      })
       clearSelection()
     },
     [selectedOrders, selectedIds, setStatus, clearSelection],

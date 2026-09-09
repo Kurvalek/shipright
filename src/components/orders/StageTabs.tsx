@@ -2,9 +2,9 @@ import { LANES } from '@/lib/derive'
 import type { LaneId } from '@/lib/types'
 import { cn } from '@/lib/cn'
 
-/* The five stages an order passes through, in order. Underlined tabs rather
-   than pills, because these are the structure of the work, not one filter among
-   many — the toolbar underneath is where narrowing happens. */
+/* The stages an order passes through, in order. Underlined tabs rather than
+   pills, because these are the structure of the work, not one filter among many
+   — the toolbar underneath is where narrowing happens. */
 export function StageTabs({
   active,
   counts,

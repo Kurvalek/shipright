@@ -4,13 +4,11 @@ export type Priority = 'rush' | 'standard' | 'bulk'
 
 export type Role = 'admin' | 'manager' | 'worker'
 
-/** The five fulfillment stages a worker actually works out of. */
-export type LaneId =
-  | 'needs_attention'
-  | 'new_unassigned'
-  | 'ready_to_pack'
-  | 'ready_to_ship'
-  | 'completed'
+/* The tabs a worker works out of. Every tab but one is exactly a status, which
+   is what keeps one vocabulary across the tab, the pill in the row and the
+   button that moves an order there. Needs attention is the exception on
+   purpose: it cuts across statuses to collect what will not move on its own. */
+export type LaneId = 'needs_attention' | OrderStatus
 
 /** Worst-case stock state across an order's line items. */
 export type Fulfillment = 'ok' | 'low' | 'out'

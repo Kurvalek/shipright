@@ -13,9 +13,11 @@ Other scripts: `npm run build`, `npm run preview`, `npm run typecheck`.
 
 ## What changed from v1
 
-**Five stage tabs replace the flat pile.** The list is split along the path an order actually takes across the floor, each tab carrying a live count: Needs attention, New / unassigned, Ready to pack, Ready to ship, Completed. The default lands on Needs attention rather than "250 of 250" in no particular order. Needs attention is the only tab that cuts across stages — it collects anything overdue or blocked by stock, the orders that will not move on their own.
+**Stage tabs replace the flat pile.** The list is split along the path an order actually takes across the floor, each tab carrying a live count: Needs attention, New, In progress, Packed, Shipped, Completed. The default lands on Needs attention rather than "250 of 250" in no particular order. Needs attention is the only tab that cuts across statuses — it collects anything overdue or blocked by stock, the orders that will not move on their own.
 
-**Checkboxes and a bulk action bar.** Select rows and a contextual bar rises from the bottom. The move a stage exists to perform is promoted to the primary button and moves that make no sense there are not offered, so a packed order is never invited to be packed again. When only part of a stage is selected the bar offers to take the rest, which is what makes `Ready to ship · 84 → Select all → Mark shipped` three clicks instead of 84 modals.
+**One vocabulary throughout.** Every tab but Needs attention is named after the status it holds, and every action is named after the status it produces, so a tab, the pill in a row and the button that moves an order there all use the same word. `LaneId` is typed as `'needs_attention' | OrderStatus`, which makes a tab that is not a status a compile error rather than a copy decision.
+
+**Checkboxes and a bulk action bar.** Select rows and a contextual bar rises from the bottom. The move a stage exists to perform is promoted to the primary button and moves that make no sense there are not offered, so a packed order is never invited to be packed again. When only part of a stage is selected the bar offers to take the rest, which is what makes `Packed · 84 → Select all → Mark as shipped` three clicks instead of 84 modals.
 
 **Undo on bulk actions.** Moving 84 orders in one click is only comfortable if it is reversible, so every bulk action reports what it did in plain terms and holds an undo open for eight seconds.
 

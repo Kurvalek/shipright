@@ -168,21 +168,21 @@ await capture('02-orders-row-expanded')
 
 /* Scenario one: clear the packed backlog in a single action. */
 await goto('/orders')
-await clickText('[role=tab]', 'Ready to ship')
-await capture('03-ready-to-ship')
+await clickText('[role=tab]', 'Packed')
+await capture('03-packed')
 
 await selectAll()
-await capture('04-ready-to-ship-all-selected')
+await capture('04-packed-all-selected')
 
-await clickText('button', 'Mark shipped', BULK_BAR)
-await capture('05-ready-to-ship-shipped-with-undo')
+await clickText('button', 'Mark as shipped', BULK_BAR)
+await capture('05-packed-shipped-with-undo')
 
 /* Scenario two: hand 52 rush orders to one worker in one action. */
 await goto('/orders')
-await setView('orders.lane', 'new_unassigned')
+await setView('orders.lane', 'new')
 await setView('orders.filters', { ...NO_FILTERS, priority: 'rush' })
 await goto('/orders')
-await capture('06-new-unassigned-rush')
+await capture('06-new-rush')
 
 await selectAll()
 await clickText('button', 'Assign to', BULK_BAR)
@@ -193,7 +193,7 @@ await capture('08-new-rush-assigned')
 
 // --- Order details panel -------------------------------------------------
 await goto('/orders')
-await setView('orders.lane', 'ready_to_pack')
+await setView('orders.lane', 'in_progress')
 await setView('orders.filters', NO_FILTERS)
 await goto('/orders')
 await clickText('button', 'View')
