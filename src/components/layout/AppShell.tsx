@@ -22,11 +22,13 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <div className="mx-auto max-w-[1400px] px-8 py-7">{children}</div>
               </div>
 
-              {/* Outside the scroll container so docked bars stay put, inside
-                  the pane's corners so they read as part of the page. */}
+              {/* Outside the scroll container so docked bars stay put. It must
+                  not clip: a docked bar sits at the very bottom, so its menus
+                  open upward and out of this box. Anything full-bleed in here
+                  rounds its own bottom corners to match the pane instead. */}
               <div
                 id={PANE_DOCK_ID}
-                className="pointer-events-none absolute inset-x-0 bottom-0 z-30 overflow-hidden rounded-b-shell"
+                className="pointer-events-none absolute inset-x-0 bottom-0 z-30"
               />
             </div>
           </main>

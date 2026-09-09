@@ -87,7 +87,7 @@ export function BulkActionBar({
     <div
       role="region"
       aria-label="Bulk actions"
-      className="pointer-events-auto flex items-center gap-2 bg-ink px-8 py-3 motion-safe:animate-[lift_160ms_ease-out]"
+      className="pointer-events-auto flex items-center gap-2 rounded-b-shell bg-ink px-8 py-3 motion-safe:animate-[lift_160ms_ease-out]"
     >
       <p aria-live="polite" className="tnum text-[13px] font-medium whitespace-nowrap text-white">
         {count} selected
