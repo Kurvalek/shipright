@@ -3,9 +3,10 @@ import { ORDER_FLOW, STATUS_META } from '@/lib/derive'
 import type { OrderStatus } from '@/lib/types'
 import { cn } from '@/lib/cn'
 
-/* A timeline rather than a bare select: it shows where the order sits in the
-   flow and lets you move it in one click, which is the same mental model as
-   the inline row action. */
+/* Primarily a read: where the order sits in the flow. The next step has its own
+   named button above, so the steps here are for jumping to any stage —
+   including backwards, to undo a move made too early — which a single
+   forward-only action cannot express. */
 export function StatusTimeline({
   status,
   onChange,
@@ -26,8 +27,10 @@ export function StatusTimeline({
             <button
               type="button"
               onClick={() => onChange(step)}
+              disabled={isCurrent}
               aria-current={isCurrent ? 'step' : undefined}
-              className="group flex shrink-0 flex-col items-center gap-1.5"
+              title={isCurrent ? undefined : `Move to ${STATUS_META[step].label}`}
+              className="group flex shrink-0 flex-col items-center gap-1.5 disabled:cursor-default"
             >
               <span
                 className={cn(

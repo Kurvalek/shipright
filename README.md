@@ -25,7 +25,7 @@ Other scripts: `npm run build`, `npm run preview`, `npm run typecheck`.
 
 **Visible urgency.** The Ship by column reads as relative urgency rather than a raw timestamp, and the page header states the pressure as a number — how many in this stage are overdue, and how many are due today.
 
-**Inline status advance.** Hovering a row reveals the single most likely next step for that order's state. The modal is now for detail and notes rather than the only way to move an order forward.
+**The next step is always named.** Hovering a row reveals the single most likely next step for that order's state, and the detail panel spells the same move out as its own button — Mark as packed, Mark as shipped — so advancing one order never depends on discovering that the timeline circles are clickable. The timeline stays for reading progress and for correcting a move made too early, which a forward-only button cannot express.
 
 ## Design system
 
@@ -58,9 +58,9 @@ The split on persistence is deliberate:
 src/
   lib/          types, mock data and generator, derived logic (stages, stock join, urgency), store
   components/
-    ui/         Button, Pill, Checkbox, Field, Toggle, Card, Modal, Menu, Avatar, EmptyState
+    ui/         Button, Pill, Checkbox, Field, Toggle, Card, Modal, SidePanel, Menu, Avatar, EmptyState
     layout/     AppShell, TopBar, Sidebar, PageHeader, Logo
-    orders/     stage tabs, saved views, toolbar, table, row, expansion, bulk bar, undo toast, modal
+    orders/     stage tabs, saved views, toolbar, table, row, expansion, bulk bar, undo toast, detail panel
     inventory/  stat cards, edit modal
     settings/   the four tab panels
   pages/        Orders, Inventory, Settings

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
+import { ArrowRight } from 'lucide-react'
 import { SidePanel } from '@/components/ui/SidePanel'
 import { Button } from '@/components/ui/Button'
 import { Label, Select, Textarea } from '@/components/ui/Field'
-import { Mono, DueCell, PriorityPill, StockIndicator } from './cells'
+import { Mono, DueCell, PriorityPill, StatusPill, StockIndicator } from './cells'
 import { LineStockTable } from './LineStockTable'
 import { StatusTimeline } from './StatusTimeline'
-import { dueLabel, formatTimestamp, orderStock } from '@/lib/derive'
+import { dueLabel, formatTimestamp, nextAction, orderStock } from '@/lib/derive'
 import type { SkuIndex } from '@/lib/derive'
 import type { Order, OrderStatus, User } from '@/lib/types'
 
@@ -40,6 +41,7 @@ export function OrderDetailsPanel({
 
   const stock = orderStock(order, skus)
   const due = dueLabel(order, now)
+  const advance = nextAction(order.status)
 
   return (
     <SidePanel
@@ -72,6 +74,28 @@ export function OrderDetailsPanel({
     >
       <div className="space-y-6">
         <div className="rounded-lg border border-hairline bg-surface-sunken px-4 py-4">
+          {/* The named move, spelled out. The timeline underneath reads as
+              progress and handles corrections; it should not be the only way
+              to find the next step. */}
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <span className="label-micro">Stage</span>
+              <StatusPill status={order.status} />
+            </div>
+            {advance ? (
+              <Button
+                variant="primary"
+                size="sm"
+                iconRight={<ArrowRight size={13} />}
+                onClick={() => onStatus(order.id, advance.next)}
+              >
+                {advance.long}
+              </Button>
+            ) : (
+              <span className="text-[12px] text-ink-muted">Closed out</span>
+            )}
+          </div>
+
           <StatusTimeline status={order.status} onChange={(next) => onStatus(order.id, next)} />
         </div>
 

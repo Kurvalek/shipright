@@ -249,17 +249,21 @@ export const PRIORITY_META: Record<Priority, { label: string; className: string 
   bulk: { label: 'Bulk', className: 'bg-transparent text-ink-secondary ring-1 ring-hairline' },
 }
 
-/** The single most likely next step for an order, surfaced inline on the row. */
-export function nextAction(status: OrderStatus): { label: string; next: OrderStatus } | null {
+/* The single most likely next step for an order. `label` is for the row, where
+   a column of buttons has to stay narrow; `long` is for the detail panel, which
+   has the room to name the move in full. */
+export function nextAction(
+  status: OrderStatus,
+): { label: string; long: string; next: OrderStatus } | null {
   switch (status) {
     case 'new':
-      return { label: 'Start', next: 'in_progress' }
+      return { label: 'Start', long: 'Start picking', next: 'in_progress' }
     case 'in_progress':
-      return { label: 'Mark packed', next: 'packed' }
+      return { label: 'Mark packed', long: 'Mark as packed', next: 'packed' }
     case 'packed':
-      return { label: 'Mark shipped', next: 'shipped' }
+      return { label: 'Mark shipped', long: 'Mark as shipped', next: 'shipped' }
     case 'shipped':
-      return { label: 'Complete', next: 'completed' }
+      return { label: 'Complete', long: 'Complete order', next: 'completed' }
     case 'completed':
       return null
   }

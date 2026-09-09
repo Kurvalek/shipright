@@ -192,13 +192,26 @@ await capture('07-new-rush-assign-menu')
 await clickText('[role=menuitem]', 'Bahar')
 await capture('08-new-rush-assigned')
 
-// --- Order details modal -------------------------------------------------
+// --- Order details panel -------------------------------------------------
 await goto('/orders')
 await setView('orders.lane', 'ready_to_pack')
 await setView('orders.filters', NO_FILTERS)
 await goto('/orders')
 await clickText('button', 'View')
 await capture('09-order-details')
+
+/* The next step is a named button, so advancing one order does not depend on
+   working out that the timeline circles are clickable. */
+await clickText('button', 'Mark as packed')
+await capture('09b-order-details-advanced')
+
+// The end of the flow has no next step left to offer.
+await goto('/orders')
+await setView('orders.lane', 'completed')
+await setView('orders.filters', { ...NO_FILTERS, status: 'completed' })
+await goto('/orders')
+await clickText('button', 'View')
+await capture('09c-order-details-closed-out')
 
 // --- Inventory -----------------------------------------------------------
 await goto('/inventory')
