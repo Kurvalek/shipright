@@ -12,14 +12,19 @@ import { OrdersTable } from '@/components/orders/OrdersTable'
 import { BulkActionBar } from '@/components/orders/BulkActionBar'
 import { UndoToast } from '@/components/orders/UndoToast'
 import { OrderDetailsPanel } from '@/components/orders/OrderDetailsPanel'
+import type { OrderGroup } from '@/components/orders/OrdersTable'
 import {
+  ATTENTION_REASONS,
   LANES,
   STATUS_META,
+  attentionReason,
   buildSkuIndex,
+  isActive,
   isOverdue,
   isSameDay,
   laneCounts,
   matchesLane,
+  orderStock,
   sortForLane,
 } from '@/lib/derive'
 import { useStore } from '@/lib/store'
@@ -47,6 +52,13 @@ export default function Orders() {
   // because they describe a task in progress, not a preference.
   const [storedLane, setLane] = usePersistentState<LaneId>('orders.lane', DEFAULT_LANE)
   const [filters, setFilters] = usePersistentState<Filters>('orders.filters', NO_FILTERS)
+
+  /* Which groups are folded away is a preference too. Held as a list rather
+     than a Set because a Set does not survive the trip through JSON. */
+  const [collapsedList, setCollapsedList] = usePersistentState<string[]>(
+    'orders.collapsedGroups',
+    [],
+  )
 
   // Guards against a stage name persisted by an older build.
   const lane = LANES.some((l) => l.id === storedLane) ? storedLane : DEFAULT_LANE
@@ -96,17 +108,49 @@ export default function Orders() {
   /* Counted across the whole board, not the open stage, because these sit above
      the tabs: a number that changed every time you switched tabs would be
      reporting on the control directly beneath it. Shipped and completed orders
-     carry no pressure, so they are excluded. */
+     carry no pressure, so they are excluded.
+
+     Overdue takes an order out of the running for the other two counts, the
+     same way it takes precedence in the Needs attention groups. That is what
+     makes overdue plus blocked come to the tab's own total. */
   const urgency = useMemo(() => {
     let overdue = 0
     let today = 0
+    let blocked = 0
     for (const order of orders) {
-      if (order.status === 'shipped' || order.status === 'completed') continue
-      if (isOverdue(order, now)) overdue += 1
-      else if (isSameDay(new Date(order.dueAt), now)) today += 1
+      if (!isActive(order)) continue
+      if (isOverdue(order, now)) {
+        overdue += 1
+        continue
+      }
+      if (isSameDay(new Date(order.dueAt), now)) today += 1
+      if (orderStock(order, skus).state === 'out') blocked += 1
     }
-    return { overdue, today }
-  }, [orders, now])
+    return { overdue, today, blocked }
+  }, [orders, now, skus])
+
+  /* Needs attention is the one stage that collects orders for two unrelated
+     reasons, so it is the one stage that reads better split. Everywhere else a
+     single run of rows is the whole story. */
+  const groups = useMemo<OrderGroup[] | undefined>(() => {
+    if (lane !== 'needs_attention') return undefined
+
+    return ATTENTION_REASONS.map((reason) => ({
+      ...reason,
+      orders: visible.filter((order) => attentionReason(order, now, skus) === reason.id),
+    }))
+  }, [lane, visible, now, skus])
+
+  const collapsedGroups = useMemo(() => new Set(collapsedList), [collapsedList])
+
+  const toggleGroup = useCallback(
+    (id: string) => {
+      setCollapsedList((prev) =>
+        prev.includes(id) ? prev.filter((held) => held !== id) : [...prev, id],
+      )
+    },
+    [setCollapsedList],
+  )
 
   const clearSelection = useCallback(() => setSelected(new Set()), [])
 
@@ -122,8 +166,10 @@ export default function Orders() {
 
   useTopBarSearch(filters.search, setSearch, 'Search orders by ID, customer or SKU')
 
-  /* The numbers that decide what a shift does next. Overdue is the only one
-     that is not a stage of its own, and the only one that earns a colour. */
+  /* The three numbers that decide what a shift does next: what is already late,
+     what has not been picked up yet, and what cannot be picked at all. Overdue
+     keeps the only colour — with three cards up here, two alarms would leave
+     nothing for the eye to land on first. */
   const callouts = useMemo<Callout[]>(
     () => [
       {
@@ -132,6 +178,7 @@ export default function Orders() {
         footnote: 'Past its ship-by time',
         sprite: 'truck-clock',
         lane: 'needs_attention',
+        group: 'overdue',
         tone: 'risk',
       },
       {
@@ -142,21 +189,15 @@ export default function Orders() {
         lane: 'new',
       },
       {
-        label: 'Packed',
-        value: counts.packed,
-        footnote: 'Waiting on a carrier',
+        label: 'Missing stock',
+        value: urgency.blocked,
+        footnote: 'Short on the shelf',
         sprite: 'truck-loading',
-        lane: 'packed',
-      },
-      {
-        label: 'Shipped',
-        value: counts.shipped,
-        footnote: 'Left the building',
-        sprite: 'truck-shipped',
-        lane: 'shipped',
+        lane: 'needs_attention',
+        group: 'stock',
       },
     ],
-    [urgency.overdue, counts],
+    [urgency.overdue, urgency.blocked, counts.new],
   )
 
   const changeLane = useCallback(
@@ -167,6 +208,22 @@ export default function Orders() {
       setExpandedId(null)
     },
     [setLane, clearSelection],
+  )
+
+  /* Two of the cards count one group of Needs attention each, so they open that
+     group and fold the other away. Landing on the right tab with the section
+     you asked for collapsed would be worse than not linking at all. */
+  const openCallout = useCallback(
+    (card: Callout) => {
+      changeLane(card.lane)
+      if (card.group) {
+        const focus = card.group
+        setCollapsedList(
+          ATTENTION_REASONS.filter((reason) => reason.id !== focus).map((reason) => reason.id),
+        )
+      }
+    },
+    [changeLane, setCollapsedList],
   )
 
   const isFiltered = !sameFilters(filters, NO_FILTERS)
@@ -266,7 +323,7 @@ export default function Orders() {
         }
       />
 
-      <OrderStatCards cards={callouts} onSelect={changeLane} />
+      <OrderStatCards cards={callouts} onSelect={openCallout} />
 
       <StageTabs active={lane} counts={counts} onChange={changeLane} />
 
@@ -280,6 +337,9 @@ export default function Orders() {
 
       <OrdersTable
         orders={visible}
+        groups={groups}
+        collapsedGroups={collapsedGroups}
+        onToggleGroup={toggleGroup}
         users={users}
         skus={skus}
         now={now}

@@ -98,11 +98,36 @@ export function buildSkuIndex(inventory: InventoryItem[]): SkuIndex {
   return new Map(inventory.map((item) => [item.sku, item]))
 }
 
+/* The two things that stop an order moving on its own. Needs attention shows
+   them as separate groups, so every order in that tab has exactly one of these
+   as its reason for being there. */
+export type AttentionReason = 'overdue' | 'stock'
+
+export const ATTENTION_REASONS: Array<{ id: AttentionReason; label: string }> = [
+  { id: 'overdue', label: 'Overdue' },
+  { id: 'stock', label: 'Missing stock' },
+]
+
+/* Overdue wins when an order is both. A late order is late whether or not the
+   shelf is short, and lateness is what you act on first — so it is listed once,
+   under Overdue, with its stock reading still visible in the row. Keeping the
+   two reasons exclusive is what lets the groups add up to the tab. */
+export function attentionReason(
+  order: Order,
+  now: Date,
+  skus: SkuIndex,
+): AttentionReason | null {
+  if (!isActive(order)) return null
+  if (isOverdue(order, now)) return 'overdue'
+  if (orderStock(order, skus).state === 'out') return 'stock'
+  return null
+}
+
 export function matchesLane(order: Order, lane: LaneId, now: Date, skus: SkuIndex): boolean {
   if (lane === 'needs_attention') {
     // Late, or cannot be picked complete off the shelf. Either way a person has
     // to make a call before it ships.
-    return isActive(order) && (isOverdue(order, now) || orderStock(order, skus).state === 'out')
+    return attentionReason(order, now, skus) !== null
   }
   // Every other tab is its status, which is why they share a name.
   return order.status === lane

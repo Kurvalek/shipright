@@ -25,6 +25,8 @@ export interface Callout {
   sprite: SpriteName
   /** The stage this number lives in, so the card is a way in and not just a sign. */
   lane: LaneId
+  /** The group within that stage to open, when the stage has groups. */
+  group?: string
   tone?: 'brand' | 'risk'
 }
 
@@ -41,10 +43,10 @@ export function OrderStatCards({
   onSelect,
 }: {
   cards: Callout[]
-  onSelect: (lane: LaneId) => void
+  onSelect: (card: Callout) => void
 }) {
   return (
-    <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {cards.map((card) => {
         const tone = tones[card.tone ?? 'brand']
 
@@ -52,7 +54,7 @@ export function OrderStatCards({
           <button
             key={card.label}
             type="button"
-            onClick={() => onSelect(card.lane)}
+            onClick={() => onSelect(card)}
             className="group rounded-card border border-hairline bg-surface px-4 py-3.5 text-left transition-colors hover:border-brand-tint-border hover:bg-brand-tint/40"
           >
             <div className="flex items-start justify-between gap-3">

@@ -1,4 +1,4 @@
-import { ChevronRight, MoreHorizontal } from 'lucide-react'
+import { ArrowRight, ChevronRight, MoreHorizontal } from 'lucide-react'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { Button } from '@/components/ui/Button'
 import { Menu } from '@/components/ui/Menu'
@@ -113,21 +113,28 @@ export function OrderRow({
           <StockIndicator state={stock.state} lowCount={stock.lowCount} outCount={stock.outCount} />
         </td>
 
-        <td className="py-2 pr-4 pl-2">
+        <td className="py-2 pr-5 pl-2 text-right">
           <div
-            className="flex items-center justify-end gap-1"
+            className="inline-flex items-center gap-1.5"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Reserved space, revealed on hover or keyboard focus, so the row
-                does not reflow as the pointer moves down the table. */}
+            {/* The move itself, down to a square. Spelled out it needed room
+                for "Mark in progress" on every row, and reserving that much for
+                a button only visible on hover left a void beside every stock
+                reading. Standing rather than appearing on hover is also the
+                more honest trade: this is the action the floor performs all day,
+                so it should not have to be discovered. The words are in the
+                tooltip, the overflow menu and the details panel. */}
             {advance && (
               <Button
                 size="sm"
                 variant="secondary"
                 onClick={() => onStatus(advance.next)}
-                className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                title={advance.long}
+                aria-label={`${advance.long}: ${order.id}`}
+                className="w-7 px-0"
               >
-                {advance.label}
+                <ArrowRight size={15} />
               </Button>
             )}
 

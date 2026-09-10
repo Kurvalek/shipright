@@ -119,9 +119,11 @@ export function AssigneeCell({ user }: { user: User | undefined }) {
   }
 
   return (
-    <span className="inline-flex items-center gap-2 whitespace-nowrap">
+    // The initials always fit; the name gives way first when the column is
+    // narrow, since the avatar is what you scan the column by.
+    <span className="flex items-center gap-2">
       <Avatar name={user.name} />
-      <span className="text-[13px] text-ink">{user.name}</span>
+      <span className="truncate text-[13px] text-ink">{user.name}</span>
     </span>
   )
 }
