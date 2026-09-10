@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { cn } from '@/lib/cn'
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'inverse' | 'ghost-inverse'
+type Variant = 'primary' | 'secondary' | 'ghost' | 'link' | 'danger' | 'inverse' | 'ghost-inverse'
 type Size = 'sm' | 'md'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -16,6 +16,10 @@ const variants: Record<Variant, string> = {
   secondary:
     'bg-surface text-ink ring-1 ring-hairline hover:bg-surface-sunken active:bg-neutral-fill shadow-xs',
   ghost: 'text-ink-secondary hover:bg-neutral-fill hover:text-ink',
+  // A text action that navigates or opens something, rather than committing a
+  // change. The underline is the affordance, so it is there at rest and not
+  // only on hover.
+  link: 'text-ink-secondary underline decoration-ink-muted underline-offset-[3px] hover:text-brand hover:decoration-brand',
   danger: 'text-danger-text hover:bg-danger-fill',
   // For dark surfaces, where oxblood on plum would have nothing to say.
   inverse: 'bg-white text-ink hover:bg-white/90 active:bg-white/80',

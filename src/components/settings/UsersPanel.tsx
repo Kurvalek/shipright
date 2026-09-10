@@ -81,7 +81,7 @@ export function UsersPanel() {
                   </td>
                   <td className="py-2 pr-5 text-right">
                     <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-                      <Button size="sm" variant="ghost">
+                      <Button size="sm" variant="link">
                         Edit
                       </Button>
                       <Button size="sm" variant="danger" onClick={() => removeUser(user.id)}>

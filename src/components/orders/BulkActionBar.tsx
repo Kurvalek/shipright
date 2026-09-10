@@ -90,7 +90,7 @@ export function BulkActionBar({
       {count < totalInStage && (
         <button
           onClick={onSelectAll}
-          className="tnum rounded px-1.5 py-0.5 text-[12.5px] whitespace-nowrap text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+          className="tnum rounded px-1.5 py-0.5 text-[12.5px] whitespace-nowrap text-white/70 underline decoration-white/30 underline-offset-[3px] transition-colors hover:text-white hover:decoration-white"
         >
           Select all {totalInStage}
         </button>

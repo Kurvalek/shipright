@@ -129,7 +129,7 @@ export function OrderRow({
               </Button>
             )}
 
-            <Button size="sm" variant="ghost" onClick={onOpen}>
+            <Button size="sm" variant="link" onClick={onOpen}>
               View
             </Button>
 
@@ -167,27 +167,29 @@ export function OrderRow({
       {expanded && (
         <tr className="border-b border-hairline-subtle bg-surface-sunken last:border-0">
           <td colSpan={ORDER_COLUMN_COUNT} className="p-5">
-            <div className="rounded-table border border-hairline bg-surface p-4">
-              <div className="mb-3 flex items-center justify-end">
-                <div className="flex items-center gap-2">
-                  {order.assigneeId === null && (
-                    <Menu
-                      header="Assign to"
-                      items={users.map((user) => ({
-                        label: user.name,
-                        onSelect: () => onAssign(user.id),
-                      }))}
-                      trigger={({ toggle }) => (
-                        <Button size="sm" onClick={toggle}>
-                          Assign
-                        </Button>
-                      )}
-                    />
-                  )}
-                  <Button size="sm" variant="ghost" onClick={onOpen}>
-                    Open full details
-                  </Button>
-                </div>
+            <div className="relative rounded-table border border-hairline bg-surface p-4">
+              {/* Once the heading came off, a lone right-aligned button was
+                  holding an empty band open across the top of the box. The
+                  column headers end at Location, so the actions ride on that
+                  same line and cost no vertical space of their own. */}
+              <div className="absolute top-[15px] right-1.5 flex items-center gap-2">
+                {order.assigneeId === null && (
+                  <Menu
+                    header="Assign to"
+                    items={users.map((user) => ({
+                      label: user.name,
+                      onSelect: () => onAssign(user.id),
+                    }))}
+                    trigger={({ toggle }) => (
+                      <Button size="sm" onClick={toggle}>
+                        Assign
+                      </Button>
+                    )}
+                  />
+                )}
+                <Button size="sm" variant="link" onClick={onOpen}>
+                  View
+                </Button>
               </div>
 
               <LineStockTable lines={stock.lines} />
