@@ -133,6 +133,17 @@
   }
 }
 
+/* The other direction, for a panel that belongs to the control above it. A
+   filter row that rises into place looks like it came up off the table it is
+   about to narrow; coming down, it reads as having been let out of the button
+   that was just pressed. */
+@keyframes descend {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
 @keyframes lift {
   from {
     opacity: 0;

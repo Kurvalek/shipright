@@ -145,7 +145,7 @@ export function OrdersToolbar({
       {open && (
         <div
           id="order-filters"
-          className="flex flex-wrap items-center gap-2 pt-3 motion-safe:animate-[rise_120ms_ease-out]"
+          className="flex flex-wrap items-center gap-2 pt-3 motion-safe:animate-[descend_140ms_ease-out]"
         >
           <MultiSelect
             label="Status"

@@ -141,7 +141,8 @@ export function MultiSelect({
           className={cn(
             'absolute left-0 z-40 mt-1.5 max-h-72 w-max max-w-[18rem] min-w-full overflow-y-auto',
             'rounded-lg border border-hairline bg-surface py-1 shadow-lg focus:outline-none',
-            'motion-safe:animate-[rise_100ms_ease-out]',
+            // Hangs off the trigger above it, so it drops rather than rises.
+            'motion-safe:animate-[descend_100ms_ease-out]',
           )}
         >
           {options.map((option, index) => {
