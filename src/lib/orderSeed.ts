@@ -74,14 +74,19 @@ interface Bucket {
   lowStock: number
 }
 
+/* Two blocked orders in 250, and both of them in a stage where being short is
+   physically possible: one nobody has picked yet, and one where the picker
+   found the shelf empty. A packed order is already in a box, so it cannot be
+   short of anything, and nothing that shipped can have been unfulfillable.
+   Running out is the exception on a well-run floor — at fourteen it stopped
+   reading as an exception and started reading as the normal state. */
 const BUCKETS: Bucket[] = [
   // New / unassigned. Rush-heavy on purpose: this is the scenario where 52
   // express orders need to land on one packer in a single action.
-  { status: 'new', count: 86, unassigned: 86, rush: 52, overdue: 6, blocked: 6, lowStock: 6 },
-  { status: 'in_progress', count: 41, unassigned: 0, rush: 14, overdue: 5, blocked: 4, lowStock: 3 },
+  { status: 'new', count: 86, unassigned: 86, rush: 52, overdue: 6, blocked: 1, lowStock: 6 },
+  { status: 'in_progress', count: 41, unassigned: 0, rush: 14, overdue: 5, blocked: 1, lowStock: 3 },
   // Packed. The 84 that get cleared in one click.
-  { status: 'packed', count: 84, unassigned: 0, rush: 25, overdue: 6, blocked: 4, lowStock: 4 },
-  // Nothing that already shipped can have been unfulfillable.
+  { status: 'packed', count: 84, unassigned: 0, rush: 25, overdue: 6, blocked: 0, lowStock: 4 },
   { status: 'shipped', count: 22, unassigned: 0, rush: 6, overdue: 0, blocked: 0, lowStock: 2 },
   { status: 'completed', count: 17, unassigned: 0, rush: 4, overdue: 0, blocked: 0, lowStock: 1 },
 ]
