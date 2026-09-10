@@ -251,13 +251,19 @@ export default function Orders() {
     setSelected(new Set(visible.map((order) => order.id)))
   }, [visible])
 
-  const toggleAll = useCallback(
-    (checked: boolean) => {
-      if (checked) selectAll()
-      else clearSelection()
-    },
-    [selectAll, clearSelection],
-  )
+  /* Takes the ids the header speaks for rather than a bare flag, because Needs
+     attention is two tables and a box at the top of Overdue that also swept up
+     Missing stock would be selecting rows the reader cannot see from it. */
+  const toggleAll = useCallback((ids: string[], checked: boolean) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      for (const id of ids) {
+        if (checked) next.add(id)
+        else next.delete(id)
+      }
+      return next
+    })
+  }, [])
 
   const selectedOrders = useMemo(
     () => visible.filter((order) => selected.has(order.id)),

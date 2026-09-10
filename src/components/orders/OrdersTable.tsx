@@ -19,69 +19,49 @@ export interface OrderGroup {
    every boundary — Completed has no advance button, Shipped has no "2d
    overdue" — and the whole grid slid sideways to suit.
 
-   Everything holding a control or a fixed format is given the pixels its
-   content actually needs, so none of them collects spare room and shows it as
-   a gap. Customer and Assignee are left to divide whatever is left over: they
-   are the two columns that hold names, the only content here with no natural
-   width, and both already truncate.
+   They are shares rather than pixels, though. Fixing eight columns and leaving
+   Customer and Assignee to divide the remainder meant those two absorbed every
+   spare pixel on the page: on a wide window they ran past 300px each to hold a
+   name that wants 120, and the gap after each one was wider than the name
+   itself. The surplus belongs to the table, not to whichever columns happen to
+   be flexible, so every column takes the same fraction of it that it takes of
+   the whole.
+
+   Every column, including the two holding controls, because a percentage is
+   the only thing the fixed layout algorithm will honour here: a `calc()` of a
+   percentage minus the pixels those two need parses fine and is then ignored,
+   and the columns fall back to equal thirds of the remainder. The numbers below
+   are read as pixels at the narrowest the table goes and as shares above it, so
+   the checkbox and the buttons are exact where it is tight and a little loose
+   where there is room to spare.
 
    `secondary` marks the columns the detail pane repeats. With the pane open
    they are the ones to give up, since the reader is looking at a fuller
    version of the same fact a few hundred pixels to the right. */
-const CHECKBOX_WIDTH = 36
+const CHECKBOX_WEIGHT = 30
 /* An advance square and an overflow button. The "View" link that used to sit
    between them is gone: the row itself opens the record now. */
-const ACTIONS_WIDTH = 84
+const ACTIONS_WEIGHT = 72
 
 const allColumns = [
   // No disclosure triangle in front of the ID any more, so it needs less room.
-  { label: 'Order', width: 100, compactWidth: null, secondary: false },
-  // Splits the surplus with Assignee.
-  { label: 'Customer', width: null, compactWidth: null, secondary: false },
-  { label: 'Ship by', width: 108, compactWidth: null, secondary: false },
-  { label: 'Status', width: 112, compactWidth: null, secondary: false },
-  { label: 'Priority', width: 92, compactWidth: null, secondary: true },
-  /* Two columns dropping out leaves nearly two hundred pixels to redistribute,
-     and split between the two flexible columns it showed up as a canyon either
-     side of Assignee. Pinned, the surplus all lands in Customer, where longer
-     names actually use it. */
-  { label: 'Assignee', width: null, compactWidth: 180, secondary: false },
-  { label: 'Items', width: 84, compactWidth: null, secondary: true },
-  { label: 'Stock', width: 110, compactWidth: null, secondary: false },
+  { label: 'Order', weight: 84, secondary: false },
+  { label: 'Customer', weight: 132, secondary: false },
+  { label: 'Ship by', weight: 96, secondary: false },
+  { label: 'Status', weight: 100, secondary: false },
+  { label: 'Priority', weight: 80, secondary: true },
+  { label: 'Assignee', weight: 116, secondary: false },
+  { label: 'Items', weight: 72, secondary: true },
+  { label: 'Stock', weight: 96, secondary: false },
 ] as const
-
-/* The declared widths plus enough for a name in each of the two flexible
-   columns. Below this the table scrolls rather than crushing them. */
-const FULL_MIN_WIDTH = 920
-const COMPACT_MIN_WIDTH = 640
 
 /* Column labels, shared with the inventory grid. Secondary ink rather than
    muted: sitting on a fill, muted grey was the faintest thing on the page and
    it is the one row that has to be read before any of the others. */
 export const HEADER_CELL = 'py-2.5 pr-4 text-[12.5px] font-medium text-ink-secondary'
 
-export function OrdersTable({
-  orders,
-  groups,
-  collapsedGroups,
-  users,
-  skus,
-  now,
-  selected,
-  openId,
-  compact = false,
-  empty,
-  onToggleGroup,
-  onToggleSelect,
-  onToggleAll,
-  onOpen,
-  onStatus,
-  onAssign,
-}: {
-  orders: Order[]
-  /** Splits `orders` into named sections. Omit for a single flat run of rows. */
-  groups?: OrderGroup[]
-  collapsedGroups?: Set<string>
+/** Everything a run of rows needs, whether it is the whole stage or one group. */
+interface RowProps {
   users: User[]
   skus: SkuIndex
   now: Date
@@ -89,27 +69,94 @@ export function OrdersTable({
   /** The order the detail pane is showing, marked so the two stay tied together. */
   openId?: string | null
   /** Drops the columns the detail pane repeats, to survive the narrower page. */
-  compact?: boolean
-  empty: { title: string; body: string; action?: ReactNode }
-  onToggleGroup?: (id: string) => void
+  compact: boolean
   onToggleSelect: (id: string) => void
-  onToggleAll: (next: boolean) => void
+  /** Takes the ids it covers, since a header now speaks for its own table. */
+  onToggleAll: (ids: string[], next: boolean) => void
   onOpen: (id: string) => void
   onStatus: (ids: string[], status: OrderStatus) => void
   onAssign: (ids: string[], assigneeId: string | null) => void
+}
+
+export function OrdersTable({
+  orders,
+  groups,
+  collapsedGroups,
+  empty,
+  onToggleGroup,
+  ...rows
+}: RowProps & {
+  orders: Order[]
+  /** Splits `orders` into named sections. Omit for a single flat run of rows. */
+  groups?: OrderGroup[]
+  collapsedGroups?: Set<string>
+  empty: { title: string; body: string; action?: ReactNode }
+  onToggleGroup?: (id: string) => void
 }) {
-  const selectedHere = orders.filter((o) => selected.has(o.id)).length
+  /* A grouped stage is two tables, not one table with dividers in it. Overdue
+     and Missing stock are answers to different questions — one is late, the
+     other cannot be picked — and a heading spanning a row of a shared grid made
+     them look like two halves of one list. Each has its own column headers now,
+     which is what lets the second one be read without scrolling back up.
+
+     With nothing in the stage at all the headings drop out entirely, so the
+     empty state speaks for the whole thing rather than appearing underneath a
+     stack of zeroed titles. */
+  if (groups && orders.length > 0) {
+    return (
+      <div className="space-y-7">
+        {groups.map((group) => {
+          const collapsed = collapsedGroups?.has(group.id) ?? false
+
+          return (
+            <section key={group.id}>
+              <GroupTitle
+                label={group.label}
+                count={group.orders.length}
+                collapsed={collapsed}
+                onToggle={() => onToggleGroup?.(group.id)}
+              />
+
+              {!collapsed && group.orders.length > 0 && <Grid orders={group.orders} {...rows} />}
+            </section>
+          )
+        })}
+      </div>
+    )
+  }
+
+  return <Grid orders={orders} empty={empty} {...rows} />
+}
+
+function Grid({
+  orders,
+  empty,
+  users,
+  skus,
+  now,
+  selected,
+  openId,
+  compact,
+  onToggleSelect,
+  onToggleAll,
+  onOpen,
+  onStatus,
+  onAssign,
+}: RowProps & { orders: Order[]; empty?: { title: string; body: string; action?: ReactNode } }) {
+  const ids = orders.map((order) => order.id)
+  const selectedHere = ids.filter((id) => selected.has(id)).length
   const allSelected = orders.length > 0 && selectedHere === orders.length
 
   const columns = compact ? allColumns.filter((column) => !column.secondary) : allColumns
   const columnCount = orderColumnCount(compact)
 
-  /* One rendering path either way: an ungrouped stage is a single unnamed
-     section, and a null label is what says "no heading for this one". With
-     nothing to show the sections drop out, so the empty state speaks for the
-     whole stage instead of appearing under a stack of zeroed headings. */
-  const sections: Array<Omit<OrderGroup, 'label'> & { label: string | null }> =
-    orders.length === 0 ? [] : (groups ?? [{ id: 'all', label: null, orders }])
+  /* Dropping two columns redistributes their share across the rest rather than
+     pooling it in whichever ones happen to be flexible, so the compact grid is
+     the full one scaled down and not a different set of proportions. */
+  const totalWeight =
+    CHECKBOX_WEIGHT + ACTIONS_WEIGHT + columns.reduce((sum, column) => sum + column.weight, 0)
+
+  const share = (weight: number) => `${((weight / totalWeight) * 100).toFixed(4)}%`
 
   return (
     /* No frame around the grid. A border and a fill were drawing a box around
@@ -118,15 +165,14 @@ export function OrdersTable({
     <div className="-mx-2 overflow-x-auto">
       <table
         className="w-full table-fixed border-collapse"
-        style={{ minWidth: compact ? COMPACT_MIN_WIDTH : FULL_MIN_WIDTH }}
+        style={{ minWidth: totalWeight }}
       >
         <colgroup>
-          <col style={{ width: CHECKBOX_WIDTH }} />
-          {columns.map((column) => {
-            const width = (compact ? column.compactWidth : null) ?? column.width
-            return <col key={column.label} style={width ? { width } : undefined} />
-          })}
-          <col style={{ width: ACTIONS_WIDTH }} />
+          <col style={{ width: share(CHECKBOX_WEIGHT) }} />
+          {columns.map((column) => (
+            <col key={column.label} style={{ width: share(column.weight) }} />
+          ))}
+          <col style={{ width: share(ACTIONS_WEIGHT) }} />
         </colgroup>
 
         {/* A band rather than bare labels over the first row. The rules between
@@ -145,8 +191,8 @@ export function OrdersTable({
               <Checkbox
                 checked={allSelected}
                 indeterminate={selectedHere > 0 && !allSelected}
-                onChange={onToggleAll}
-                label="Select all orders in this view"
+                onChange={(next) => onToggleAll(ids, next)}
+                label="Select all orders in this table"
               />
             </th>
             {columns.map((column) => (
@@ -158,44 +204,25 @@ export function OrdersTable({
           </tr>
         </thead>
 
-        {sections.map((section) => {
-          const collapsed = collapsedGroups?.has(section.id) ?? false
+        <tbody>
+          {orders.map((order) => (
+            <OrderRow
+              key={order.id}
+              order={order}
+              users={users}
+              skus={skus}
+              now={now}
+              selected={selected.has(order.id)}
+              open={openId === order.id}
+              compact={compact}
+              onToggleSelect={() => onToggleSelect(order.id)}
+              onOpen={() => onOpen(order.id)}
+              onStatus={(status) => onStatus([order.id], status)}
+              onAssign={(assigneeId) => onAssign([order.id], assigneeId)}
+            />
+          ))}
 
-          return (
-            <tbody key={section.id}>
-              {section.label !== null && (
-                <GroupHeaderRow
-                  label={section.label}
-                  count={section.orders.length}
-                  collapsed={collapsed}
-                  columnCount={columnCount}
-                  onToggle={() => onToggleGroup?.(section.id)}
-                />
-              )}
-
-              {!collapsed &&
-                section.orders.map((order) => (
-                  <OrderRow
-                    key={order.id}
-                    order={order}
-                    users={users}
-                    skus={skus}
-                    now={now}
-                    selected={selected.has(order.id)}
-                    open={openId === order.id}
-                    compact={compact}
-                    onToggleSelect={() => onToggleSelect(order.id)}
-                    onOpen={() => onOpen(order.id)}
-                    onStatus={(status) => onStatus([order.id], status)}
-                    onAssign={(assigneeId) => onAssign([order.id], assigneeId)}
-                  />
-                ))}
-            </tbody>
-          )
-        })}
-
-        {orders.length === 0 && (
-          <tbody>
+          {orders.length === 0 && empty && (
             <tr>
               <td colSpan={columnCount}>
                 <EmptyState
@@ -206,68 +233,57 @@ export function OrdersTable({
                 />
               </td>
             </tr>
-          </tbody>
-        )}
+          )}
+        </tbody>
       </table>
     </div>
   )
 }
 
-/* Sits in the body rather than the head, so it scrolls with the rows it names.
-   Kept lighter than the column headings above it: those label the grid, this
-   one labels a stretch of it. */
-function GroupHeaderRow({
+/* A title over its own table rather than a row inside a shared one, so it is
+   set like a heading: the size of the page's own subheads, in full ink, with
+   the count trailing it in plain type. A chip around the number would make a
+   heading look like a badge, and the tabs above gave theirs up for the same
+   reason. */
+function GroupTitle({
   label,
   count,
   collapsed,
-  columnCount,
   onToggle,
 }: {
   label: string
   count: number
   collapsed: boolean
-  columnCount: number
   onToggle: () => void
 }) {
   // Nothing to hide, so there is nothing to collapse. The count still reports.
   const empty = count === 0
 
   return (
-    <tr>
-      <td colSpan={columnCount} className="border-b border-hairline p-0">
-        <button
-          type="button"
-          onClick={onToggle}
-          disabled={empty}
-          aria-expanded={empty ? undefined : !collapsed}
-          className={cn(
-            'flex w-full items-center gap-2.5 rounded-md py-3 pr-2 pl-1.5 text-left transition-colors',
-            !empty && 'hover:bg-surface-sunken',
-          )}
-        >
-          <ChevronRight
-            size={16}
-            className={cn(
-              'shrink-0 text-ink-muted transition-transform',
-              empty && 'opacity-0',
-              !collapsed && 'rotate-90',
-            )}
-          />
+    <button
+      type="button"
+      onClick={onToggle}
+      disabled={empty}
+      aria-expanded={empty ? undefined : !collapsed}
+      className={cn(
+        '-ml-1.5 mb-2 flex items-center gap-1.5 rounded-md py-1 pr-2.5 pl-1.5 text-left transition-colors',
+        !empty && 'hover:bg-surface-sunken',
+      )}
+    >
+      <ChevronRight
+        size={17}
+        className={cn(
+          'shrink-0 text-ink-muted transition-transform',
+          empty && 'opacity-0',
+          !collapsed && !empty && 'rotate-90',
+        )}
+      />
 
-          <span className={cn('text-[14px] font-medium', empty ? 'text-ink-muted' : 'text-ink')}>
-            {label}
-          </span>
+      <span className={cn('text-[16px] font-medium', empty ? 'text-ink-muted' : 'text-ink')}>
+        {label}
+      </span>
 
-          <span
-            className={cn(
-              'tnum grid h-[21px] min-w-[21px] place-items-center rounded px-1.5 text-[12.5px] font-medium',
-              empty ? 'text-ink-muted' : 'bg-neutral-fill text-neutral-text',
-            )}
-          >
-            {count}
-          </span>
-        </button>
-      </td>
-    </tr>
+      <span className="tnum text-[13px] text-ink-muted">{count}</span>
+    </button>
   )
 }
