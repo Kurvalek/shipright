@@ -4,6 +4,35 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ShipRight</title>
+
+    <!--
+      The weights that are on screen the instant the app paints: body, labels
+      and the display numbers. Without these the browser cannot even discover
+      the fonts until it has parsed the stylesheet that references them, which
+      is a whole round trip after the HTML arrives. Vite rewrites these to the
+      hashed build filenames.
+    -->
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      crossorigin
+      href="/node_modules/@fontsource/narnoor/files/narnoor-latin-400-normal.woff2"
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      crossorigin
+      href="/node_modules/@fontsource/narnoor/files/narnoor-latin-500-normal.woff2"
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      crossorigin
+      href="/node_modules/@fontsource/narnoor/files/narnoor-latin-600-normal.woff2"
+    />
   </head>
   <body>
     <div id="root"></div>

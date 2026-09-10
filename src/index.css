@@ -8,12 +8,19 @@
    Overriding the metrics fixes it once, everywhere, instead of nudging padding
    on each component. Setting ascent minus descent equal to the 73.5% cap
    height puts the content box's centre on the middle of a capital, which is
-   where the eye expects it, and it holds at any font size or line height. */
+   where the eye expects it, and it holds at any font size or line height.
+
+   `block`, not `swap`: swap paints the fallback first and then replaces it, and
+   since the fallback stack is a serif that showed up as the whole page flicking
+   from Georgia to Narnoor on every load. These files are self-hosted, bundled
+   and 9KB each, so blocking costs a frame rather than the three seconds the
+   property allows for. They are preloaded from index.html so the request goes
+   out with the stylesheet instead of after it. */
 @font-face {
   font-family: 'Narnoor';
   font-style: normal;
   font-weight: 400;
-  font-display: swap;
+  font-display: block;
   src: url('@fontsource/narnoor/files/narnoor-latin-400-normal.woff2') format('woff2');
   ascent-override: 97.2%;
   descent-override: 23.7%;
@@ -24,7 +31,7 @@
   font-family: 'Narnoor';
   font-style: normal;
   font-weight: 500;
-  font-display: swap;
+  font-display: block;
   src: url('@fontsource/narnoor/files/narnoor-latin-500-normal.woff2') format('woff2');
   ascent-override: 97.2%;
   descent-override: 23.7%;
@@ -35,7 +42,7 @@
   font-family: 'Narnoor';
   font-style: normal;
   font-weight: 600;
-  font-display: swap;
+  font-display: block;
   src: url('@fontsource/narnoor/files/narnoor-latin-600-normal.woff2') format('woff2');
   ascent-override: 97.2%;
   descent-override: 23.7%;
@@ -46,7 +53,7 @@
   font-family: 'Narnoor';
   font-style: normal;
   font-weight: 700;
-  font-display: swap;
+  font-display: block;
   src: url('@fontsource/narnoor/files/narnoor-latin-700-normal.woff2') format('woff2');
   ascent-override: 97.2%;
   descent-override: 23.7%;
@@ -139,6 +146,18 @@
   }
 }
 
+/* Steps across a sprite strip a frame at a time. A percentage mask position is
+   resolved against (element width - mask width), so with the strip scaled to 24
+   element widths, 0% is the first frame and 100% is the last, exactly. */
+@keyframes sprite-cycle {
+  from {
+    mask-position-x: 0%;
+  }
+  to {
+    mask-position-x: 100%;
+  }
+}
+
 @layer base {
   * {
     border-color: var(--color-hairline);
@@ -199,6 +218,27 @@
   font-family: var(--font-serif);
   font-weight: 600;
   letter-spacing: -0.015em;
+}
+
+/* An animated icon, flattened from a GIF into a strip of 24 frames. A GIF can
+   neither be paused nor recoloured from CSS — it loops from the moment it
+   decodes, and hiding it does not stop it — so the frames are stepped through
+   here instead. The strip is a mask rather than an image, so the icon takes its
+   colour from the text around it.
+
+   At rest it holds the first frame. `sprite-run` is what plays it, applied on
+   the card's hover. */
+@utility sprite {
+  mask-repeat: no-repeat;
+  mask-size: 2400% 100%;
+  mask-position-x: 0%;
+  background-color: currentColor;
+}
+
+/* 24 frames at 50ms. `jump-none` is the one step function that lands on both
+   the first and last frame, so no frame is dropped and none is held twice. */
+@utility sprite-run {
+  animation: sprite-cycle 1.2s steps(24, jump-none) infinite;
 }
 
 /* The floating content pane: a slight lift off the warm shell, not a card
