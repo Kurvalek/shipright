@@ -334,15 +334,9 @@ export default function Orders() {
 
       <OrderStatCards cards={callouts} onSelect={openCallout} />
 
-      <StageTabs active={lane} counts={counts} onChange={changeLane} />
-
-      <OrdersToolbar
-        filters={filters}
-        onChange={patchFilters}
-        users={workers}
-        shown={visible.length}
-        total={counts[lane]}
-      />
+      <OrdersToolbar filters={filters} onChange={patchFilters} users={workers}>
+        <StageTabs active={lane} counts={counts} onChange={changeLane} />
+      </OrdersToolbar>
 
       <OrdersTable
         orders={visible}
