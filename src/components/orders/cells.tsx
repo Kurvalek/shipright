@@ -22,7 +22,7 @@ export function StatusSteps({ status }: { status: OrderStatus }) {
   const reached = ORDER_FLOW.indexOf(status) + 1
 
   return (
-    <span className="inline-flex flex-col gap-1">
+    <span className="inline-flex flex-col gap-1.5">
       {/* Decorative. The stage is named directly underneath, so a screen reader
           gets it from the label rather than from five anonymous segments. */}
       <span aria-hidden className="flex items-center gap-[3px]">
@@ -33,7 +33,7 @@ export function StatusSteps({ status }: { status: OrderStatus }) {
           />
         ))}
       </span>
-      <span className="text-[13px] whitespace-nowrap text-ink">{STATUS_META[status].label}</span>
+      <span className="text-[14px] whitespace-nowrap text-ink">{STATUS_META[status].label}</span>
     </span>
   )
 }
@@ -46,7 +46,7 @@ export function PriorityFlag({ priority }: { priority: Priority }) {
       <span className={cn('h-3.5 w-[3px] shrink-0 rounded-full', meta.bar)} />
       <span
         className={cn(
-          'text-[11.5px] font-semibold tracking-[0.06em] uppercase whitespace-nowrap',
+          'text-[12px] font-semibold tracking-[0.06em] uppercase whitespace-nowrap',
           meta.text,
         )}
       >
@@ -65,9 +65,9 @@ const dueTone = {
 
 export function DueCell({ due }: { due: DueLabel }) {
   return (
-    <span className={cn('tnum text-[13px] whitespace-nowrap', dueTone[due.tone])}>
+    <span className={cn('tnum text-[14px] whitespace-nowrap', dueTone[due.tone])}>
       {due.tone === 'overdue' && (
-        <AlertTriangle size={12} className="mr-1.5 -mt-0.5 inline-block" strokeWidth={2.25} />
+        <AlertTriangle size={13} className="mr-1.5 -mt-0.5 inline-block" strokeWidth={2.25} />
       )}
       {due.text}
     </span>
@@ -99,7 +99,7 @@ export function StockIndicator({
         : `${lowCount} ${lowCount === 1 ? 'item' : 'items'} low`
 
   return (
-    <span className={cn('inline-flex items-center gap-2 text-[13px] whitespace-nowrap', meta.tone)}>
+    <span className={cn('inline-flex items-center gap-2 text-[14px] whitespace-nowrap', meta.tone)}>
       <span className={cn('size-[7px] shrink-0 rounded-full', meta.dot)} />
       {label}
     </span>
@@ -111,8 +111,8 @@ export function StockIndicator({
 export function AssigneeCell({ user }: { user: User | undefined }) {
   if (!user) {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded border border-dashed border-hairline px-1.5 py-1 text-[12px] text-ink-muted">
-        <Plus size={11} strokeWidth={2.5} />
+      <span className="inline-flex items-center gap-1.5 rounded border border-dashed border-hairline px-1.5 py-1 text-[12.5px] text-ink-muted">
+        <Plus size={12} strokeWidth={2.5} />
         Unassigned
       </span>
     )
@@ -123,13 +123,13 @@ export function AssigneeCell({ user }: { user: User | undefined }) {
     // narrow, since the avatar is what you scan the column by.
     <span className="flex items-center gap-2">
       <Avatar name={user.name} />
-      <span className="truncate text-[13px] text-ink">{user.name}</span>
+      <span className="truncate text-[14px] text-ink">{user.name}</span>
     </span>
   )
 }
 
 export function Mono({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <span className={cn('code text-[12.5px]', className)}>{children}</span>
+    <span className={cn('code text-[13px]', className)}>{children}</span>
   )
 }

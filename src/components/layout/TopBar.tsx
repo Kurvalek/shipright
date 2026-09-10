@@ -4,19 +4,28 @@ import { Logo } from './Logo'
 import { Avatar } from '@/components/ui/Avatar'
 import { Menu } from '@/components/ui/Menu'
 import { useSearchSlot } from '@/lib/topbarSearch'
+import { useShell } from '@/lib/shell'
 import { currentUser } from '@/lib/mockData'
+import { cn } from '@/lib/cn'
 
 /* Sits on the warm shell above the content pane, so the page below reads as a
    sheet of paper on a desk rather than another panel in a grid. */
 export function TopBar() {
   const slot = useSearchSlot()
   const navigate = useNavigate()
+  const { sidebarCollapsed: collapsed } = useShell()
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-4 pr-4 pl-[22px]">
-      {/* Matches the sidebar column so the mark sits over the nav. */}
-      <div className="flex w-[13.625rem] shrink-0 items-center">
-        <Logo />
+      {/* Matches the sidebar column so the mark sits over the nav, and follows
+          it down to the rail width when it folds. */}
+      <div
+        className={cn(
+          'flex shrink-0 items-center transition-[width] duration-200 ease-out',
+          collapsed ? 'w-[2.875rem]' : 'w-[13.625rem]',
+        )}
+      >
+        <Logo compact={collapsed} />
       </div>
 
       <div className="flex min-w-0 flex-1 justify-center">

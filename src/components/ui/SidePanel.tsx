@@ -14,6 +14,7 @@ export function SidePanel({
   footer,
   children,
   width = 'sm:max-w-[34rem]',
+  bodyClassName = 'overflow-y-auto px-6 py-5',
 }: {
   open: boolean
   onClose: () => void
@@ -22,6 +23,8 @@ export function SidePanel({
   footer?: ReactNode
   children: ReactNode
   width?: string
+  /** For bodies that lay themselves out to the panel's height rather than scroll. */
+  bodyClassName?: string
 }) {
   const panelRef = useRef<HTMLDivElement>(null)
 
@@ -79,8 +82,8 @@ export function SidePanel({
           </button>
         </header>
 
-        {/* The body scrolls on its own so the header and actions stay put. */}
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">{children}</div>
+        {/* The body handles its own overflow so the header and actions stay put. */}
+        <div className={cn('min-h-0 flex-1', bodyClassName)}>{children}</div>
 
         {footer && (
           <footer className="flex shrink-0 items-center justify-end gap-2 border-t border-hairline bg-surface-sunken px-6 py-3.5">

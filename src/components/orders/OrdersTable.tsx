@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { ChevronRight, PackageOpen } from 'lucide-react'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { ORDER_COLUMN_COUNT, OrderRow } from './OrderRow'
+import { OrderRow, orderColumnCount } from './OrderRow'
 import type { Order, OrderStatus, User } from '@/lib/types'
 import type { SkuIndex } from '@/lib/derive'
 import { cn } from '@/lib/cn'
@@ -23,25 +23,34 @@ export interface OrderGroup {
    content actually needs, so none of them collects spare room and shows it as
    a gap. Customer and Assignee are left to divide whatever is left over: they
    are the two columns that hold names, the only content here with no natural
-   width, and both already truncate. */
+   width, and both already truncate.
+
+   `secondary` marks the columns the detail pane repeats. With the pane open
+   they are the ones to give up, since the reader is looking at a fuller
+   version of the same fact a few hundred pixels to the right. */
 const CHECKBOX_WIDTH = 36
 const ACTIONS_WIDTH = 138
 
-const columns = [
-  { label: 'Order', width: 96 },
+const allColumns = [
+  { label: 'Order', width: 122, compactWidth: null, secondary: false },
   // Splits the surplus with Assignee.
-  { label: 'Customer', width: null },
-  { label: 'Ship by', width: 100 },
-  { label: 'Status (step)', width: 104 },
-  { label: 'Priority', width: 84 },
-  { label: 'Assignee', width: null },
-  { label: 'Items', width: 76 },
-  { label: 'Stock', width: 102 },
+  { label: 'Customer', width: null, compactWidth: null, secondary: false },
+  { label: 'Ship by', width: 108, compactWidth: null, secondary: false },
+  { label: 'Status (step)', width: 112, compactWidth: null, secondary: false },
+  { label: 'Priority', width: 92, compactWidth: null, secondary: true },
+  /* Two columns dropping out leaves nearly two hundred pixels to redistribute,
+     and split between the two flexible columns it showed up as a canyon either
+     side of Assignee. Pinned, the surplus all lands in Customer, where longer
+     names actually use it. */
+  { label: 'Assignee', width: null, compactWidth: 180, secondary: false },
+  { label: 'Items', width: 84, compactWidth: null, secondary: true },
+  { label: 'Stock', width: 110, compactWidth: null, secondary: false },
 ] as const
 
 /* The declared widths plus enough for a name in each of the two flexible
    columns. Below this the table scrolls rather than crushing them. */
-const MIN_TABLE_WIDTH = 944
+const FULL_MIN_WIDTH = 1000
+const COMPACT_MIN_WIDTH = 720
 
 export function OrdersTable({
   orders,
@@ -52,6 +61,8 @@ export function OrdersTable({
   now,
   selected,
   expandedId,
+  openId,
+  compact = false,
   empty,
   onToggleGroup,
   onToggleSelect,
@@ -70,6 +81,10 @@ export function OrdersTable({
   now: Date
   selected: Set<string>
   expandedId: string | null
+  /** The order the detail pane is showing, marked so the two stay tied together. */
+  openId?: string | null
+  /** Drops the columns the detail pane repeats, to survive the narrower page. */
+  compact?: boolean
   empty: { title: string; body: string; action?: ReactNode }
   onToggleGroup?: (id: string) => void
   onToggleSelect: (id: string) => void
@@ -82,6 +97,9 @@ export function OrdersTable({
   const selectedHere = orders.filter((o) => selected.has(o.id)).length
   const allSelected = orders.length > 0 && selectedHere === orders.length
 
+  const columns = compact ? allColumns.filter((column) => !column.secondary) : allColumns
+  const columnCount = orderColumnCount(compact)
+
   /* One rendering path either way: an ungrouped stage is a single unnamed
      section, and a null label is what says "no heading for this one". With
      nothing to show the sections drop out, so the empty state speaks for the
@@ -90,93 +108,100 @@ export function OrdersTable({
     orders.length === 0 ? [] : (groups ?? [{ id: 'all', label: null, orders }])
 
   return (
-    <div className="overflow-hidden rounded-table border border-hairline bg-surface">
-      <div className="overflow-x-auto">
-        <table
-          className="w-full table-fixed border-collapse"
-          style={{ minWidth: MIN_TABLE_WIDTH }}
-        >
-          <colgroup>
-            <col style={{ width: CHECKBOX_WIDTH }} />
-            {columns.map((column) => (
-              <col
-                key={column.label}
-                style={column.width ? { width: column.width } : undefined}
-              />
-            ))}
-            <col style={{ width: ACTIONS_WIDTH }} />
-          </colgroup>
-
-          <thead>
-            <tr className="border-b border-hairline bg-surface-sunken">
-              <th className="py-2.5 pl-5">
-                <Checkbox
-                  checked={allSelected}
-                  indeterminate={selectedHere > 0 && !allSelected}
-                  onChange={onToggleAll}
-                  label="Select all orders in this view"
-                />
-              </th>
-              {columns.map((column) => (
-                <th key={column.label} className="label-text py-2.5 pr-4 text-left">
-                  {column.label}
-                </th>
-              ))}
-              <th className="label-text py-2.5 pr-5 text-right">Actions</th>
-            </tr>
-          </thead>
-
-          {sections.map((section) => {
-            const collapsed = collapsedGroups?.has(section.id) ?? false
-
-            return (
-              <tbody key={section.id}>
-                {section.label !== null && (
-                  <GroupHeaderRow
-                    label={section.label}
-                    count={section.orders.length}
-                    collapsed={collapsed}
-                    onToggle={() => onToggleGroup?.(section.id)}
-                  />
-                )}
-
-                {!collapsed &&
-                  section.orders.map((order) => (
-                    <OrderRow
-                      key={order.id}
-                      order={order}
-                      users={users}
-                      skus={skus}
-                      now={now}
-                      selected={selected.has(order.id)}
-                      expanded={expandedId === order.id}
-                      onToggleSelect={() => onToggleSelect(order.id)}
-                      onToggleExpand={() => onToggleExpand(order.id)}
-                      onOpen={() => onOpen(order.id)}
-                      onStatus={(status) => onStatus([order.id], status)}
-                      onAssign={(assigneeId) => onAssign([order.id], assigneeId)}
-                    />
-                  ))}
-              </tbody>
-            )
+    /* No frame around the grid. A border and a fill were drawing a box around
+       something the white pane already contains, and the rules between rows are
+       the only lines the eye needs to track one across. */
+    <div className="-mx-2 overflow-x-auto">
+      <table
+        className="w-full table-fixed border-collapse"
+        style={{ minWidth: compact ? COMPACT_MIN_WIDTH : FULL_MIN_WIDTH }}
+      >
+        <colgroup>
+          <col style={{ width: CHECKBOX_WIDTH }} />
+          {columns.map((column) => {
+            const width = (compact ? column.compactWidth : null) ?? column.width
+            return <col key={column.label} style={width ? { width } : undefined} />
           })}
+          <col style={{ width: ACTIONS_WIDTH }} />
+        </colgroup>
 
-          {orders.length === 0 && (
-            <tbody>
-              <tr>
-                <td colSpan={ORDER_COLUMN_COUNT}>
-                  <EmptyState
-                    icon={<PackageOpen size={18} />}
-                    title={empty.title}
-                    body={empty.body}
-                    action={empty.action}
+        <thead>
+          <tr className="border-b border-hairline">
+            <th className="pb-2.5 pl-2">
+              <Checkbox
+                checked={allSelected}
+                indeterminate={selectedHere > 0 && !allSelected}
+                onChange={onToggleAll}
+                label="Select all orders in this view"
+              />
+            </th>
+            {columns.map((column) => (
+              <th
+                key={column.label}
+                className="pr-4 pb-2.5 text-left text-[12.5px] font-medium text-ink-muted"
+              >
+                {column.label}
+              </th>
+            ))}
+            <th className="pr-2 pb-2.5 text-right text-[12.5px] font-medium text-ink-muted">
+              Actions
+            </th>
+          </tr>
+        </thead>
+
+        {sections.map((section) => {
+          const collapsed = collapsedGroups?.has(section.id) ?? false
+
+          return (
+            <tbody key={section.id}>
+              {section.label !== null && (
+                <GroupHeaderRow
+                  label={section.label}
+                  count={section.orders.length}
+                  collapsed={collapsed}
+                  columnCount={columnCount}
+                  onToggle={() => onToggleGroup?.(section.id)}
+                />
+              )}
+
+              {!collapsed &&
+                section.orders.map((order) => (
+                  <OrderRow
+                    key={order.id}
+                    order={order}
+                    users={users}
+                    skus={skus}
+                    now={now}
+                    selected={selected.has(order.id)}
+                    expanded={expandedId === order.id}
+                    open={openId === order.id}
+                    compact={compact}
+                    onToggleSelect={() => onToggleSelect(order.id)}
+                    onToggleExpand={() => onToggleExpand(order.id)}
+                    onOpen={() => onOpen(order.id)}
+                    onStatus={(status) => onStatus([order.id], status)}
+                    onAssign={(assigneeId) => onAssign([order.id], assigneeId)}
                   />
-                </td>
-              </tr>
+                ))}
             </tbody>
-          )}
-        </table>
-      </div>
+          )
+        })}
+
+        {orders.length === 0 && (
+          <tbody>
+            <tr>
+              <td colSpan={columnCount}>
+                <EmptyState
+                  icon={<PackageOpen size={18} />}
+                  title={empty.title}
+                  body={empty.body}
+                  action={empty.action}
+                />
+              </td>
+            </tr>
+          </tbody>
+        )}
+      </table>
     </div>
   )
 }
@@ -188,11 +213,13 @@ function GroupHeaderRow({
   label,
   count,
   collapsed,
+  columnCount,
   onToggle,
 }: {
   label: string
   count: number
   collapsed: boolean
+  columnCount: number
   onToggle: () => void
 }) {
   // Nothing to hide, so there is nothing to collapse. The count still reports.
@@ -200,19 +227,19 @@ function GroupHeaderRow({
 
   return (
     <tr>
-      <td colSpan={ORDER_COLUMN_COUNT} className="border-b border-hairline p-0">
+      <td colSpan={columnCount} className="border-b border-hairline p-0">
         <button
           type="button"
           onClick={onToggle}
           disabled={empty}
           aria-expanded={empty ? undefined : !collapsed}
           className={cn(
-            'flex w-full items-center gap-2.5 py-2.5 pr-5 pl-4 text-left transition-colors',
+            'flex w-full items-center gap-2.5 rounded-md py-3 pr-2 pl-1.5 text-left transition-colors',
             !empty && 'hover:bg-surface-sunken',
           )}
         >
           <ChevronRight
-            size={15}
+            size={16}
             className={cn(
               'shrink-0 text-ink-muted transition-transform',
               empty && 'opacity-0',
@@ -220,13 +247,13 @@ function GroupHeaderRow({
             )}
           />
 
-          <span className={cn('text-[13px] font-medium', empty ? 'text-ink-muted' : 'text-ink')}>
+          <span className={cn('text-[14px] font-medium', empty ? 'text-ink-muted' : 'text-ink')}>
             {label}
           </span>
 
           <span
             className={cn(
-              'tnum grid h-[20px] min-w-[20px] place-items-center rounded px-1.5 text-[12px] font-medium',
+              'tnum grid h-[21px] min-w-[21px] place-items-center rounded px-1.5 text-[12.5px] font-medium',
               empty ? 'text-ink-muted' : 'bg-neutral-fill text-neutral-text',
             )}
           >

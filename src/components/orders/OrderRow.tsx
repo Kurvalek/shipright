@@ -9,7 +9,11 @@ import type { SkuIndex } from '@/lib/derive'
 import type { Order, OrderStatus, User } from '@/lib/types'
 import { cn } from '@/lib/cn'
 
-export const ORDER_COLUMN_COUNT = 10
+/** Checkbox and actions either side of the data columns, two of which drop out
+    of the compact layout. */
+export function orderColumnCount(compact: boolean): number {
+  return compact ? 8 : 10
+}
 
 export function OrderRow({
   order,
@@ -18,6 +22,8 @@ export function OrderRow({
   now,
   selected,
   expanded,
+  open = false,
+  compact = false,
   onToggleSelect,
   onToggleExpand,
   onOpen,
@@ -30,6 +36,9 @@ export function OrderRow({
   now: Date
   selected: boolean
   expanded: boolean
+  /** Currently shown in the detail pane. */
+  open?: boolean
+  compact?: boolean
   onToggleSelect: () => void
   onToggleExpand: () => void
   onOpen: () => void
@@ -48,11 +57,18 @@ export function OrderRow({
         onClick={onToggleExpand}
         className={cn(
           'group cursor-pointer border-b border-hairline-subtle transition-colors last:border-0',
-          selected ? 'bg-brand-tint' : 'hover:bg-surface-sunken',
-          expanded && !selected && 'bg-surface-sunken',
+          selected || open ? 'bg-brand-tint' : 'hover:bg-surface-sunken',
+          expanded && !selected && !open && 'bg-surface-sunken',
         )}
       >
-        <td className="w-10 pl-5">
+        {/* A rule down the left edge rather than another fill, so the row the
+            pane is describing stays picked out even while it is also selected. */}
+        <td
+          className={cn(
+            'w-10 pl-2',
+            open && 'shadow-[inset_3px_0_0_0_var(--color-brand)]',
+          )}
+        >
           <Checkbox
             checked={selected}
             onChange={onToggleSelect}
@@ -60,7 +76,7 @@ export function OrderRow({
           />
         </td>
 
-        <td className="py-2.5 pr-4">
+        <td className="py-3.5 pr-4">
           {/* A real button so the expansion is reachable without a pointer.
               Clicking anywhere on the row does the same thing. */}
           <button
@@ -74,46 +90,52 @@ export function OrderRow({
             className="flex items-center gap-1.5"
           >
             <ChevronRight
-              size={13}
+              size={14}
               className={cn(
                 'shrink-0 text-ink-muted transition-transform',
                 expanded && 'rotate-90',
               )}
             />
-            <Mono className="font-medium text-ink">{order.id}</Mono>
+            {/* The one thing every conversation about a row starts with, so it
+                carries the weight the rest of the row gives up. */}
+            <Mono className="text-[14.5px] font-bold text-ink">{order.id}</Mono>
           </button>
         </td>
 
         {/* The column's own width governs now that the table is fixed, so this
             only needs to say what happens when a name outgrows it. */}
-        <td className="truncate py-2.5 pr-4 text-[13px] text-ink">{order.customer}</td>
+        <td className="truncate py-3.5 pr-4 text-[14px] text-ink">{order.customer}</td>
 
-        <td className="py-2.5 pr-4">
+        <td className="py-3.5 pr-4">
           <DueCell due={due} />
         </td>
 
-        <td className="py-2.5 pr-4">
+        <td className="py-3.5 pr-4">
           <StatusSteps status={order.status} />
         </td>
 
-        <td className="py-2.5 pr-4">
-          <PriorityFlag priority={order.priority} />
-        </td>
+        {!compact && (
+          <td className="py-3.5 pr-4">
+            <PriorityFlag priority={order.priority} />
+          </td>
+        )}
 
-        <td className="py-2.5 pr-4">
+        <td className="py-3.5 pr-4">
           <AssigneeCell user={assignee} />
         </td>
 
-        <td className="tnum py-2.5 pr-4 text-[13px] whitespace-nowrap text-ink-secondary">
-          {order.lines.length} {order.lines.length === 1 ? 'line' : 'lines'}
-          <span className="text-ink-muted"> · {itemCount}</span>
-        </td>
+        {!compact && (
+          <td className="tnum py-3.5 pr-4 text-[14px] whitespace-nowrap text-ink-secondary">
+            {order.lines.length} {order.lines.length === 1 ? 'line' : 'lines'}
+            <span className="text-ink-muted"> · {itemCount}</span>
+          </td>
+        )}
 
-        <td className="py-2.5 pr-4">
+        <td className="py-3.5 pr-4">
           <StockIndicator state={stock.state} lowCount={stock.lowCount} outCount={stock.outCount} />
         </td>
 
-        <td className="py-2 pr-5 pl-2 text-right">
+        <td className="py-3 pr-2 pl-2 text-right">
           <div
             className="inline-flex items-center gap-1.5"
             onClick={(e) => e.stopPropagation()}
@@ -155,14 +177,14 @@ export function OrderRow({
                   ? [{ label: 'Unassign', onSelect: () => onAssign(null) }]
                   : []),
               ]}
-              trigger={({ toggle, open }) => (
+              trigger={({ toggle, open: menuOpen }) => (
                 <button
                   type="button"
                   aria-label={`More actions for ${order.id}`}
                   onClick={toggle}
                   className={cn(
                     'grid size-7 place-items-center rounded-md text-ink-muted transition-colors hover:bg-neutral-fill hover:text-ink',
-                    open && 'bg-neutral-fill text-ink',
+                    menuOpen && 'bg-neutral-fill text-ink',
                   )}
                 >
                   <MoreHorizontal size={15} />
@@ -175,7 +197,7 @@ export function OrderRow({
 
       {expanded && (
         <tr className="border-b border-hairline-subtle bg-surface-sunken last:border-0">
-          <td colSpan={ORDER_COLUMN_COUNT} className="p-5">
+          <td colSpan={orderColumnCount(compact)} className="p-4">
             <div className="relative rounded-table border border-hairline bg-surface p-4">
               {/* Once the heading came off, a lone right-aligned button was
                   holding an empty band open across the top of the box. The
@@ -206,7 +228,7 @@ export function OrderRow({
               {/* The label and the note now share a size, so the note takes
                   full ink to stay the thing being read. */}
               {order.notes && (
-                <p className="mt-3 border-t border-hairline-subtle pt-3 text-[13px] text-ink">
+                <p className="mt-3 border-t border-hairline-subtle pt-3 text-[13.5px] text-ink">
                   <span className="label-text mr-2">Note</span>
                   {order.notes}
                 </p>

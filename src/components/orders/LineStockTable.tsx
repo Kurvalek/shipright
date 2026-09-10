@@ -30,14 +30,14 @@ export function LineStockTable({ lines }: { lines: LineStock[] }) {
 
           return (
             <tr key={line.sku} className="border-b border-hairline-subtle last:border-0">
-              <td className="py-2">
+              <td className="py-2.5">
                 <Mono className="text-ink-secondary">{line.sku}</Mono>
               </td>
-              <td className="py-2 pr-4 text-[13px] text-ink">{line.name}</td>
-              <td className="tnum py-2 text-right text-[13px] text-ink">{line.required}</td>
+              <td className="py-2.5 pr-4 text-[13.5px] text-ink">{line.name}</td>
+              <td className="tnum py-2.5 text-right text-[13.5px] text-ink">{line.required}</td>
               <td
                 className={cn(
-                  'tnum py-2 text-right text-[13px]',
+                  'tnum py-2.5 text-right text-[13.5px]',
                   line.state === 'out'
                     ? 'font-medium text-danger-text'
                     : line.state === 'low'
@@ -47,13 +47,13 @@ export function LineStockTable({ lines }: { lines: LineStock[] }) {
               >
                 {line.onHand}
               </td>
-              <td className="py-2 pl-6">
+              <td className="py-2.5 pl-6">
                 <span className="inline-flex items-center gap-1.5 text-ink-secondary">
-                  <MapPin size={12} className="text-ink-muted" />
+                  <MapPin size={13} className="text-ink-muted" />
                   <Mono>{line.location}</Mono>
                 </span>
               </td>
-              <td className="py-2 pl-4 text-right">
+              <td className="py-2.5 pl-4 text-right">
                 {flag && <Pill className={flag.className}>{flag.label}</Pill>}
               </td>
             </tr>

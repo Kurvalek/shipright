@@ -28,6 +28,8 @@ import {
   sortForLane,
 } from '@/lib/derive'
 import { useStore } from '@/lib/store'
+import { useShell } from '@/lib/shell'
+import { useMediaQuery } from '@/lib/useMediaQuery'
 import { useTopBarSearch } from '@/lib/topbarSearch'
 import { usePersistentState } from '@/lib/usePersistentState'
 import type { LaneId, Order, OrderStatus } from '@/lib/types'
@@ -47,6 +49,13 @@ function sameFilters(a: Filters, b: Filters): boolean {
 
 export default function Orders() {
   const { orders, inventory, users, workers, setStatus, assign, restore, setNotes } = useStore()
+
+  /* The detail pane costs the list about four hundred pixels. Above the width
+     below there is still room for every column once it has, so the list only
+     gives up the two the pane repeats when it would otherwise be squeezed. */
+  const { dockOpen } = useShell()
+  const roomForEveryColumn = useMediaQuery('(min-width: 1580px)')
+  const compactTable = dockOpen && !roomForEveryColumn
 
   // Stage and filters persist. Selection and expansion are per-session,
   // because they describe a task in progress, not a preference.
@@ -345,6 +354,8 @@ export default function Orders() {
         now={now}
         selected={selected}
         expandedId={expandedId}
+        openId={openId}
+        compact={compactTable}
         empty={empty}
         onToggleSelect={toggleSelect}
         onToggleAll={toggleAll}

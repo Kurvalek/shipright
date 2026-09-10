@@ -194,124 +194,128 @@ export default function Inventory() {
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-table border border-hairline bg-surface">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[980px] border-collapse">
-            <thead>
-              <tr className="border-b border-hairline bg-surface-sunken">
-                {columns.map((column, i) => (
-                  <th
-                    key={column}
+      {/* Unframed, like the orders grid: a border and a fill were drawing a box
+          around something the white pane already contains. */}
+      <div className="-mx-2 overflow-x-auto">
+        <table className="w-full min-w-[980px] border-collapse">
+          <thead>
+            <tr className="border-b border-hairline">
+              {columns.map((column, i) => (
+                <th
+                  key={column}
+                  className={cn(
+                    'pr-4 pb-2.5 text-left text-[12.5px] font-medium text-ink-muted',
+                    i === 0 && 'pl-2',
+                    (column === 'On hand' || column === 'Reorder at') && 'text-right',
+                  )}
+                >
+                  {column}
+                </th>
+              ))}
+              <th className="pr-2 pb-2.5 text-right text-[12.5px] font-medium text-ink-muted">
+                Actions
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {visible.map((item) => {
+              const state = itemStockState(item)
+
+              return (
+                <tr
+                  key={item.sku}
+                  className="group border-b border-hairline-subtle transition-colors last:border-0 hover:bg-surface-sunken"
+                >
+                  {/* Amber edge marks the rows a buyer needs to act on. */}
+                  <td
                     className={cn(
-                      'label-text py-2.5 pr-4 text-left',
-                      i === 0 && 'pl-5',
-                      (column === 'On hand' || column === 'Reorder at') && 'text-right',
+                      'py-3.5 pr-4 pl-2',
+                      state === 'low' && 'shadow-[inset_2px_0_0_var(--color-risk-edge)]',
+                      state === 'out' && 'shadow-[inset_2px_0_0_var(--color-danger-dot)]',
                     )}
                   >
-                    {column}
-                  </th>
-                ))}
-                <th className="label-text py-2.5 pr-5 text-right">Actions</th>
-              </tr>
-            </thead>
+                    {/* The identifier the whole row hangs off, so it carries the
+                        weight the rest of the row gives up. */}
+                    <Mono className="text-[14.5px] font-bold text-ink">{item.sku}</Mono>
+                  </td>
 
-            <tbody>
-              {visible.map((item) => {
-                const state = itemStockState(item)
+                  <td className="max-w-[320px] py-3.5 pr-4">
+                    <p className="truncate text-[14px] text-ink">{item.name}</p>
+                    <p className="truncate text-[12.5px] text-ink-muted">{item.description}</p>
+                  </td>
 
-                return (
-                  <tr
-                    key={item.sku}
-                    className="group border-b border-hairline-subtle transition-colors last:border-0 hover:bg-surface-sunken"
-                  >
-                    {/* Amber edge marks the rows a buyer needs to act on. */}
-                    <td
+                  <td className="py-3.5 pr-4 text-[14px] whitespace-nowrap text-ink-secondary">
+                    {item.category}
+                  </td>
+
+                  <td className="py-3.5 pr-4 text-right whitespace-nowrap">
+                    <span
                       className={cn(
-                        'py-3 pr-4 pl-5',
-                        state === 'low' && 'shadow-[inset_2px_0_0_var(--color-risk-edge)]',
-                        state === 'out' && 'shadow-[inset_2px_0_0_var(--color-danger-dot)]',
+                        'tnum text-[14px]',
+                        state === 'out'
+                          ? 'font-medium text-danger-text'
+                          : state === 'low'
+                            ? 'font-medium text-risk-text'
+                            : 'text-ink',
                       )}
                     >
-                      <Mono className="font-medium text-ink">{item.sku}</Mono>
-                    </td>
+                      {item.quantity === 0 ? 'None' : item.quantity.toLocaleString()}
+                    </span>
+                  </td>
 
-                    <td className="max-w-[320px] py-3 pr-4">
-                      <p className="truncate text-[13px] text-ink">{item.name}</p>
-                      <p className="truncate text-[12px] text-ink-muted">{item.description}</p>
-                    </td>
+                  <td className="tnum py-3.5 pr-4 text-right text-[14px] text-ink-muted">
+                    {item.reorderPoint}
+                  </td>
 
-                    <td className="py-3 pr-4 text-[13px] whitespace-nowrap text-ink-secondary">
-                      {item.category}
-                    </td>
+                  <td className="py-3.5 pr-4">
+                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-ink-secondary">
+                      <MapPin size={13} className="text-ink-muted" />
+                      <Mono>{item.location}</Mono>
+                    </span>
+                  </td>
 
-                    <td className="py-3 pr-4 text-right whitespace-nowrap">
-                      <span
-                        className={cn(
-                          'tnum text-[13px]',
-                          state === 'out'
-                            ? 'font-medium text-danger-text'
-                            : state === 'low'
-                              ? 'font-medium text-risk-text'
-                              : 'text-ink',
-                        )}
-                      >
-                        {item.quantity === 0 ? 'None' : item.quantity.toLocaleString()}
-                      </span>
-                    </td>
+                  <td className="py-3.5 pr-4 text-[14px] whitespace-nowrap text-ink-muted">
+                    {formatRelative(item.updatedAt, now)}
+                  </td>
 
-                    <td className="tnum py-3 pr-4 text-right text-[13px] text-ink-muted">
-                      {item.reorderPoint}
-                    </td>
-
-                    <td className="py-3 pr-4">
-                      <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-ink-secondary">
-                        <MapPin size={12} className="text-ink-muted" />
-                        <Mono>{item.location}</Mono>
-                      </span>
-                    </td>
-
-                    <td className="py-3 pr-4 text-[13px] whitespace-nowrap text-ink-muted">
-                      {formatRelative(item.updatedAt, now)}
-                    </td>
-
-                    <td className="py-2 pr-5 text-right">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        icon={<Pencil size={12} />}
-                        onClick={() => setEditSku(item.sku)}
-                        className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-                      >
-                        Edit
-                      </Button>
-                    </td>
-                  </tr>
-                )
-              })}
-
-              {visible.length === 0 && (
-                <tr>
-                  <td colSpan={columns.length + 1}>
-                    <EmptyState
-                      icon={<PackageOpen size={18} />}
-                      title="No matching items"
-                      body={
-                        filters.lowOnly
-                          ? 'Nothing is at or below its reorder point right now.'
-                          : 'Nothing matches these filters. Try widening the search.'
-                      }
-                      action={
-                        isFiltered ? (
-                          <Button onClick={() => setFilters(NO_FILTERS)}>Clear filters</Button>
-                        ) : undefined
-                      }
-                    />
+                  <td className="py-3 pr-2 text-right">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={<Pencil size={12} />}
+                      onClick={() => setEditSku(item.sku)}
+                      className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                    >
+                      Edit
+                    </Button>
                   </td>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              )
+            })}
+
+            {visible.length === 0 && (
+              <tr>
+                <td colSpan={columns.length + 1}>
+                  <EmptyState
+                    icon={<PackageOpen size={18} />}
+                    title="No matching items"
+                    body={
+                      filters.lowOnly
+                        ? 'Nothing is at or below its reorder point right now.'
+                        : 'Nothing matches these filters. Try widening the search.'
+                    }
+                    action={
+                      isFiltered ? (
+                        <Button onClick={() => setFilters(NO_FILTERS)}>Clear filters</Button>
+                      ) : undefined
+                    }
+                  />
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
 
       <EditItemModal

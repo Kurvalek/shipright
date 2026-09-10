@@ -24,11 +24,15 @@ export function LogoMark({ className }: { className?: string }) {
   )
 }
 
-export function Logo() {
+/* The wordmark drops when the nav folds to a rail, so the mark stays lined up
+   over the icons underneath it rather than overhanging the content pane. */
+export function Logo({ compact = false }: { compact?: boolean }) {
   return (
     <div className="flex items-center gap-2.5">
       <LogoMark />
-      <span className="text-[15px] font-semibold tracking-[-0.015em] text-ink">ShipRight</span>
+      {!compact && (
+        <span className="text-[15px] font-semibold tracking-[-0.015em] text-ink">ShipRight</span>
+      )}
     </div>
   )
 }
