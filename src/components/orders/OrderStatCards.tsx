@@ -66,7 +66,23 @@ export function OrderStatCards({
             key={card.label}
             type="button"
             onClick={() => onSelect(card)}
-            className="group rounded-card border border-hairline bg-surface px-4 py-3.5 text-left transition-colors hover:border-brand-tint-border hover:bg-brand-tint/40"
+            className={cn(
+              'group rounded-card border border-hairline bg-surface px-4 py-3.5 text-left',
+              /* A card that lifts says "this is a thing you can pick up" without
+                 tinting the numbers it is holding — the fill it used to take on
+                 hover was the same family as the risk tone on the Overdue card,
+                 so pointing at one changed what it appeared to be saying. */
+              'transition-[transform,box-shadow] duration-150 ease-out',
+              'hover:-translate-y-0.5 hover:shadow-card-hover',
+              /* Tailwind only lets `hover` fire on pointers that can hover, so
+                 on a phone the card would answer a tap with nothing at all.
+                 Pressing lifts it the same way, with a squeeze on top: on a
+                 touchscreen that is the whole gesture, and under a pointer it
+                 is the press against an already-lifted card. */
+              'active:-translate-y-0.5 active:scale-[0.995] active:shadow-card-hover',
+              'active:duration-75',
+              'motion-reduce:transition-none motion-reduce:hover:transform-none motion-reduce:active:transform-none',
+            )}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">

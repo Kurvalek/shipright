@@ -272,6 +272,14 @@
   background-color: currentColor;
 }
 
+/* A card held just off the page, under a pointer or a finger. Tighter and
+   darker than the pane's, which is cast by something the width of the window. */
+@utility shadow-card-hover {
+  box-shadow:
+    0 1px 2px rgb(63 42 49 / 0.06),
+    0 6px 16px -6px rgb(63 42 49 / 0.18);
+}
+
 /* The floating content pane: a slight lift off the warm shell, not a card
    sitting on a card. */
 @utility shadow-pane {
