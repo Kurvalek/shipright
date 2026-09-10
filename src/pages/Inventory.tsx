@@ -1,20 +1,14 @@
 import { useCallback, useMemo, useState } from 'react'
-import {
-  AlertTriangle,
-  Boxes,
-  Layers,
-  MapPin,
-  PackageOpen,
-  Pencil,
-  TrendingDown,
-  X,
-} from 'lucide-react'
+import { AlertTriangle, Boxes, Layers, MapPin, PackageOpen, Pencil, X } from 'lucide-react'
+import outOfStock from '@/assets/icons/out-of-stock.png'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { AssetIcon } from '@/components/ui/AssetIcon'
 import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Field'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { StatCard } from '@/components/inventory/StatCard'
 import { EditItemModal } from '@/components/inventory/EditItemModal'
+import { HEADER_CELL } from '@/components/orders/OrdersTable'
 import { Mono } from '@/components/orders/cells'
 import { formatRelative, itemStockState } from '@/lib/derive'
 import { useStore } from '@/lib/store'
@@ -120,7 +114,9 @@ export default function Inventory() {
           footnote="Sum of all quantities"
         />
         <StatCard
-          icon={stats.out > 0 ? <TrendingDown size={15} /> : <AlertTriangle size={15} />}
+          icon={
+            stats.out > 0 ? <AssetIcon src={outOfStock} size={15} /> : <AlertTriangle size={15} />
+          }
           label="Low or out"
           value={needsAttention}
           tone={needsAttention > 0 ? 'risk' : 'neutral'}
@@ -134,7 +130,7 @@ export default function Inventory() {
         />
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 pb-4">
+      <div className="flex flex-wrap items-center gap-2 pb-6">
         <Select
           value={filters.category}
           placeholder="All categories"
@@ -198,13 +194,14 @@ export default function Inventory() {
           around something the white pane already contains. */}
       <div className="-mx-2 overflow-x-auto">
         <table className="w-full min-w-[980px] border-collapse">
-          <thead>
+          <thead className="bg-canvas">
             <tr className="border-b border-hairline">
               {columns.map((column, i) => (
                 <th
                   key={column}
                   className={cn(
-                    'pr-4 pb-2.5 text-left text-[12.5px] font-medium text-ink-muted',
+                    HEADER_CELL,
+                    'text-left',
                     i === 0 && 'pl-2',
                     (column === 'On hand' || column === 'Reorder at') && 'text-right',
                   )}
@@ -212,9 +209,7 @@ export default function Inventory() {
                   {column}
                 </th>
               ))}
-              <th className="pr-2 pb-2.5 text-right text-[12.5px] font-medium text-ink-muted">
-                Actions
-              </th>
+              <th className={cn(HEADER_CELL, 'pr-2 text-right')}>Actions</th>
             </tr>
           </thead>
 

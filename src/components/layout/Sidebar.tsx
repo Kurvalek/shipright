@@ -1,20 +1,19 @@
 import { NavLink } from 'react-router-dom'
-import {
-  ClipboardList,
-  ChevronsUpDown,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Package,
-  Settings as SettingsIcon,
-} from 'lucide-react'
+import { ChevronsUpDown } from 'lucide-react'
+import inventoryIcon from '@/assets/icons/inventory.png'
+import ordersIcon from '@/assets/icons/orders.png'
+import panelCollapse from '@/assets/icons/panel-collapse.png'
+import panelExpand from '@/assets/icons/panel-expand.png'
+import settingsIcon from '@/assets/icons/settings.png'
+import { AssetIcon } from '@/components/ui/AssetIcon'
 import { useStore } from '@/lib/store'
 import { useShell } from '@/lib/shell'
 import { cn } from '@/lib/cn'
 
 const nav = [
-  { to: '/orders', label: 'Orders', icon: ClipboardList },
-  { to: '/inventory', label: 'Inventory', icon: Package },
-  { to: '/settings', label: 'Settings', icon: SettingsIcon },
+  { to: '/orders', label: 'Orders', icon: ordersIcon },
+  { to: '/inventory', label: 'Inventory', icon: inventoryIcon },
+  { to: '/settings', label: 'Settings', icon: settingsIcon },
 ]
 
 /* Sits directly on the shell with no fill or divider of its own. The content
@@ -64,12 +63,12 @@ export function Sidebar() {
           title={collapsed ? 'Expand navigation' : 'Collapse navigation'}
           className="grid size-8 shrink-0 place-items-center rounded-lg text-ink-muted transition-colors hover:bg-black/[0.035] hover:text-ink"
         >
-          {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+          <AssetIcon src={collapsed ? panelExpand : panelCollapse} size={17} />
         </button>
       </div>
 
       <nav className="flex flex-col gap-0.5">
-        {nav.map(({ to, label, icon: Icon }) => (
+        {nav.map(({ to, label, icon }) => (
           <NavLink
             key={to}
             to={to}
@@ -86,7 +85,8 @@ export function Sidebar() {
           >
             {({ isActive }) => (
               <>
-                <Icon
+                <AssetIcon
+                  src={icon}
                   size={collapsed ? 18 : 16}
                   className={isActive ? 'text-brand' : 'text-ink-muted'}
                 />

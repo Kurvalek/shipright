@@ -89,7 +89,10 @@ export function OrdersToolbar({
   const clear = () => onChange(NO_FILTERS)
 
   return (
-    <div className="mb-4">
+    // The header band below is a shape of its own now rather than a line of
+    // labels, so it needs clearing from the rule under the tabs — at 16px the
+    // two were reading as one stacked control.
+    <div className="mb-6">
       {/* Runs the width of the table rather than the width of the pane. The
           rule is the top edge of the list, so it starts and stops where the
           list does — the negative margin matches the table's own. */}

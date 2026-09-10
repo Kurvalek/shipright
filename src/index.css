@@ -241,6 +241,17 @@
   animation: sprite-cycle 1.2s steps(24, jump-none) infinite;
 }
 
+/* A still icon drawn from a PNG, masked for the same reason the sprites are:
+   these are flat black artwork, and a nav item that cannot take the colour of
+   the row it sits in would be the only thing on the page ignoring the state
+   it is in. */
+@utility icon-mask {
+  mask-repeat: no-repeat;
+  mask-size: contain;
+  mask-position: center;
+  background-color: currentColor;
+}
+
 /* The floating content pane: a slight lift off the warm shell, not a card
    sitting on a card. */
 @utility shadow-pane {

@@ -1,28 +1,37 @@
-import { ArrowRight } from 'lucide-react'
 import boxOpen from '@/assets/icons/box-open.png'
+import newIcon from '@/assets/icons/new.png'
+import outOfStock from '@/assets/icons/out-of-stock.png'
 import truckClock from '@/assets/icons/truck-clock.png'
 import truckLoading from '@/assets/icons/truck-loading.png'
 import truckShipped from '@/assets/icons/truck-shipped.png'
 import type { LaneId } from '@/lib/types'
 import { cn } from '@/lib/cn'
 
-/* Sprite strips rather than the GIFs they came from: a GIF cannot be stopped,
-   restarted or recoloured from CSS. See scripts/build-icon-sprites.py. */
-export const SPRITES = {
-  'box-open': boxOpen,
-  'truck-clock': truckClock,
-  'truck-loading': truckLoading,
-  'truck-shipped': truckShipped,
+/* Two kinds of artwork end up in the same chip. The animated ones are sprite
+   strips rather than the GIFs they came from, since a GIF cannot be stopped,
+   restarted or recoloured from CSS — see scripts/build-icon-sprites.py. The
+   still ones are single drawings, and `animated` is what decides whether the
+   mask is stepped through on hover or simply held.
+
+   Both are masks either way, so a card takes the colour of the tone it is in
+   rather than carrying its own. */
+const ICONS = {
+  'box-open': { src: boxOpen, animated: true },
+  'truck-clock': { src: truckClock, animated: true },
+  'truck-loading': { src: truckLoading, animated: true },
+  'truck-shipped': { src: truckShipped, animated: true },
+  new: { src: newIcon, animated: false },
+  'out-of-stock': { src: outOfStock, animated: false },
 } as const
 
-export type SpriteName = keyof typeof SPRITES
+export type IconName = keyof typeof ICONS
 
 export interface Callout {
   label: string
   value: number
   /** What the number means, in the words a packer would use. */
   footnote: string
-  sprite: SpriteName
+  icon: IconName
   /** The stage this number lives in, so the card is a way in and not just a sign. */
   lane: LaneId
   /** The group within that stage to open, when the stage has groups. */
@@ -49,6 +58,7 @@ export function OrderStatCards({
     <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {cards.map((card) => {
         const tone = tones[card.tone ?? 'brand']
+        const icon = ICONS[card.icon]
 
         return (
           <button
@@ -61,20 +71,16 @@ export function OrderStatCards({
               <div className="min-w-0">
                 <p className="label-text">{card.label}</p>
 
-                <div className="mt-1.5 flex items-baseline gap-2.5">
-                  <span className={cn('display tnum text-[26px] leading-none', tone.value)}>
-                    {card.value}
-                  </span>
-                  {/* Underlined at rest like every other link, and the arrow
-                      only leans in once the card is under the pointer. */}
-                  <span className="inline-flex items-center gap-1 text-[13px] text-ink-secondary underline decoration-ink-muted underline-offset-[3px] transition-colors group-hover:text-brand group-hover:decoration-brand">
-                    View
-                    <ArrowRight
-                      size={13}
-                      className="transition-transform group-hover:translate-x-0.5"
-                    />
-                  </span>
-                </div>
+                {/* No "View" beside the number any more. The whole card has
+                    been the target all along, and a link inside a button gave
+                    the click two names for one destination. The border and
+                    fill still answer the pointer, which is what says it is a
+                    way in. */}
+                <span
+                  className={cn('display tnum mt-1.5 block text-[26px] leading-none', tone.value)}
+                >
+                  {card.value}
+                </span>
 
                 <p className="mt-1.5 truncate text-[12px] text-ink-muted">{card.footnote}</p>
               </div>
@@ -84,9 +90,10 @@ export function OrderStatCards({
               >
                 <span
                   aria-hidden
-                  style={{ maskImage: `url(${SPRITES[card.sprite]})` }}
+                  style={{ maskImage: `url(${icon.src})` }}
                   className={cn(
-                    'sprite block size-7 motion-safe:group-hover:sprite-run',
+                    'block size-7',
+                    icon.animated ? 'sprite motion-safe:group-hover:sprite-run' : 'icon-mask',
                     tone.ink,
                   )}
                 />

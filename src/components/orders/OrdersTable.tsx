@@ -39,7 +39,7 @@ const allColumns = [
   // Splits the surplus with Assignee.
   { label: 'Customer', width: null, compactWidth: null, secondary: false },
   { label: 'Ship by', width: 108, compactWidth: null, secondary: false },
-  { label: 'Status (step)', width: 112, compactWidth: null, secondary: false },
+  { label: 'Status', width: 112, compactWidth: null, secondary: false },
   { label: 'Priority', width: 92, compactWidth: null, secondary: true },
   /* Two columns dropping out leaves nearly two hundred pixels to redistribute,
      and split between the two flexible columns it showed up as a canyon either
@@ -54,6 +54,11 @@ const allColumns = [
    columns. Below this the table scrolls rather than crushing them. */
 const FULL_MIN_WIDTH = 920
 const COMPACT_MIN_WIDTH = 640
+
+/* Column labels, shared with the inventory grid. Secondary ink rather than
+   muted: sitting on a fill, muted grey was the faintest thing on the page and
+   it is the one row that has to be read before any of the others. */
+export const HEADER_CELL = 'py-2.5 pr-4 text-[12.5px] font-medium text-ink-secondary'
 
 export function OrdersTable({
   orders,
@@ -124,9 +129,19 @@ export function OrdersTable({
           <col style={{ width: ACTIONS_WIDTH }} />
         </colgroup>
 
-        <thead>
+        {/* A band rather than bare labels over the first row. The rules between
+            rows read as the table, and without something separating the labels
+            from them the top row of data started one line below a line of the
+            same weight.
+
+            The shell colour, so the band reads as the one place the pane is
+            thin enough to see through. The sunken white a step above it is 2%
+            off the pane and disappeared; the chip fill a step below is doing
+            hover and badge duty everywhere else, and a band of it would tie
+            the header to controls it has nothing to do with. */}
+        <thead className="bg-canvas">
           <tr className="border-b border-hairline">
-            <th className="pb-2.5 pl-2">
+            <th className="py-2.5 pl-2">
               <Checkbox
                 checked={allSelected}
                 indeterminate={selectedHere > 0 && !allSelected}
@@ -135,16 +150,11 @@ export function OrdersTable({
               />
             </th>
             {columns.map((column) => (
-              <th
-                key={column.label}
-                className="pr-4 pb-2.5 text-left text-[12.5px] font-medium text-ink-muted"
-              >
+              <th key={column.label} className={cn(HEADER_CELL, 'text-left')}>
                 {column.label}
               </th>
             ))}
-            <th className="pr-2 pb-2.5 text-right text-[12.5px] font-medium text-ink-muted">
-              Actions
-            </th>
+            <th className={cn(HEADER_CELL, 'pr-2 text-right')}>Actions</th>
           </tr>
         </thead>
 

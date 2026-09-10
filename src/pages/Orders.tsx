@@ -183,25 +183,27 @@ export default function Orders() {
         label: 'Overdue',
         value: urgency.overdue,
         footnote: 'Past its ship-by time',
-        sprite: 'truck-clock',
+        icon: 'truck-clock',
         lane: 'needs_attention',
         group: 'overdue',
         tone: 'risk',
       },
       {
-        label: 'New',
-        value: counts.new,
-        footnote: 'Nobody assigned yet',
-        sprite: 'box-open',
-        lane: 'new',
-      },
-      {
         label: 'Missing stock',
         value: urgency.blocked,
         footnote: 'Short on the shelf',
-        sprite: 'truck-loading',
+        icon: 'out-of-stock',
         lane: 'needs_attention',
         group: 'stock',
+      },
+      /* Last, because the first two are problems and this one is only work
+         waiting. The row now reads worst to ordinary from left to right. */
+      {
+        label: 'New',
+        value: counts.new,
+        footnote: 'Nobody assigned yet',
+        icon: 'new',
+        lane: 'new',
       },
     ],
     [urgency.overdue, urgency.blocked, counts.new],
@@ -334,7 +336,7 @@ export default function Orders() {
       <OrderStatCards cards={callouts} onSelect={openCallout} />
 
       <OrdersToolbar filters={filters} onChange={patchFilters} users={workers}>
-        <StageTabs active={lane} counts={counts} onChange={changeLane} />
+        <StageTabs active={lane} onChange={changeLane} />
       </OrdersToolbar>
 
       <OrdersTable

@@ -1,27 +1,14 @@
+import ship from '@/assets/icons/ship.png'
+import { AssetIcon } from '@/components/ui/AssetIcon'
 import { cn } from '@/lib/cn'
 
-/* The mark reads as a check inside a shipping tile: "right" as in correct,
-   which is the promise in the name. It is one of only a few places the brand
-   colour is allowed to appear. */
+/* A ship, in the brand colour, with nothing behind it. The mark used to be a
+   check on a brand tile — "right" as in correct — and the ship is too finely
+   drawn to survive being shrunk to fit inside one: three sails and a waterline
+   at 13px is a smudge. Given the whole 22px it reads, and the brand colour it
+   was borrowing from the tile it now carries itself. */
 export function LogoMark({ className }: { className?: string }) {
-  return (
-    <span
-      className={cn(
-        'grid size-[22px] shrink-0 place-items-center rounded-[6px] bg-brand',
-        className,
-      )}
-    >
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden>
-        <path
-          d="M4 12.8 9.2 18 20 6.5"
-          stroke="white"
-          strokeWidth="2.6"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </span>
-  )
+  return <AssetIcon src={ship} size={22} className={cn('text-brand', className)} />
 }
 
 /* The wordmark drops when the nav folds to a rail, so the mark stays lined up
