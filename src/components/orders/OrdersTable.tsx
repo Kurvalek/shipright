@@ -125,7 +125,27 @@ export function OrdersTable({
                   onToggle={() => onToggleGroup?.(group.id)}
                 />
 
-                {!collapsed && group.orders.length > 0 && <Grid orders={group.orders} {...rows} />}
+                {/* Folded on a grid track rather than by being taken out of the
+                    tree, so the sections below slide instead of jumping the
+                    depth of a table. A transition rather than a keyframe: the
+                    table stays mounted either way, and a transition reverses
+                    from wherever it has got to when somebody changes their
+                    mind halfway. */}
+                {group.orders.length > 0 && (
+                  <div
+                    // Still rendered while folded, so still tabbable without
+                    // this — a table nobody can see is not one to land in.
+                    inert={collapsed}
+                    className={cn(
+                      'grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none',
+                      collapsed ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]',
+                    )}
+                  >
+                    <div className="overflow-hidden">
+                      <Grid orders={group.orders} {...rows} />
+                    </div>
+                  </div>
+                )}
               </section>
             </Fragment>
           )
