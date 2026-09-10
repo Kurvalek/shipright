@@ -79,6 +79,14 @@ export default function Orders() {
 
   const counts = useMemo(() => laneCounts(orders, now, skus), [orders, now, skus])
 
+  /* Drawn from the whole board rather than the open stage. A list that lost the
+     name you were about to pick because that customer has nothing in Packed
+     would be answering a question nobody asked it. */
+  const customers = useMemo(
+    () => [...new Set(orders.map((order) => order.customer))].sort((a, b) => a.localeCompare(b)),
+    [orders],
+  )
+
   const visible = useMemo(() => {
     const needle = filters.search.trim().toLowerCase()
 
@@ -94,6 +102,8 @@ export default function Orders() {
       if (filters.assignee.length && !filters.assignee.includes(order.assigneeId ?? 'none')) {
         return false
       }
+
+      if (filters.customer.length && !filters.customer.includes(order.customer)) return false
 
       if (needle) {
         const haystack = [order.id, order.customer, ...order.lines.map((line) => line.sku)]
@@ -335,7 +345,12 @@ export default function Orders() {
 
       <OrderStatCards cards={callouts} onSelect={openCallout} />
 
-      <OrdersToolbar filters={filters} onChange={patchFilters} users={workers}>
+      <OrdersToolbar
+        filters={filters}
+        onChange={patchFilters}
+        users={workers}
+        customers={customers}
+      >
         <StageTabs active={lane} counts={counts} onChange={changeLane} />
       </OrdersToolbar>
 

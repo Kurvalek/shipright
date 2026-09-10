@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { ChevronDown, SlidersHorizontal, X } from 'lucide-react'
 import { MultiSelect } from '@/components/ui/MultiSelect'
@@ -16,9 +16,17 @@ export interface Filters {
   priority: Priority[]
   /** User ids, plus 'none' for orders nobody has picked up. */
   assignee: string[]
+  /** Customer names, which are what an order carries in place of an id. */
+  customer: string[]
 }
 
-export const NO_FILTERS: Filters = { search: '', status: [], priority: [], assignee: [] }
+export const NO_FILTERS: Filters = {
+  search: '',
+  status: [],
+  priority: [],
+  assignee: [],
+  customer: [],
+}
 
 /* These are persisted, and they were three strings before they were three
    lists. A filter saved by an older build would come back as `''` where an
@@ -35,8 +43,12 @@ export function normalizeFilters(stored: Partial<Filters> | null | undefined): F
     status: list(stored?.status) as OrderStatus[],
     priority: list(stored?.priority) as Priority[],
     assignee: list(stored?.assignee),
+    customer: list(stored?.customer),
   }
 }
+
+/** How long the row is kept mounted past the press that closed it. */
+const EXIT_MS = 120
 
 export function sameFilters(a: Filters, b: Filters): boolean {
   const same = (x: string[], y: string[]) =>
@@ -46,7 +58,8 @@ export function sameFilters(a: Filters, b: Filters): boolean {
     a.search === b.search &&
     same(a.status, b.status) &&
     same(a.priority, b.priority) &&
-    same(a.assignee, b.assignee)
+    same(a.assignee, b.assignee) &&
+    same(a.customer, b.customer)
   )
 }
 
@@ -63,11 +76,14 @@ export function OrdersToolbar({
   filters,
   onChange,
   users,
+  customers,
   children,
 }: {
   filters: Filters
   onChange: (patch: Partial<Filters>) => void
   users: User[]
+  /** Every name on the books, sorted, not just the ones in the open stage. */
+  customers: string[]
   /** The stage tabs, which lead the row the filter button sits at the end of. */
   children: ReactNode
 }) {
@@ -79,12 +95,40 @@ export function OrdersToolbar({
      plain sight, so it is not one of the things being folded away here.
      Clearing still takes it, because "clear" that leaves a search running is a
      lie. */
-  const applied = [filters.status, filters.priority, filters.assignee].filter(
+  const applied = [filters.status, filters.priority, filters.assignee, filters.customer].filter(
     (chosen) => chosen.length > 0,
   ).length
   const isFiltered = applied > 0 || filters.search !== ''
 
+  /* Folding away is a state of its own, because the row cannot animate out of a
+     tree it has already left. `open` is what is mounted; `closing` is what it is
+     doing while it is still there. */
   const [open, setOpen] = useState(applied > 0)
+  const [closing, setClosing] = useState(false)
+  const expanded = open && !closing
+
+  useEffect(() => {
+    if (!closing) return
+
+    /* Timed rather than waiting on `animationend`, which never fires when the
+       animation is the one `motion-safe` withholds — the row would stay on the
+       page for good. */
+    const wait = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : EXIT_MS
+    const timer = window.setTimeout(() => {
+      setOpen(false)
+      setClosing(false)
+    }, wait)
+
+    return () => window.clearTimeout(timer)
+  }, [closing])
+
+  const toggle = () => {
+    // Caught mid-fold. The row never left, so swapping the keyframe back drops
+    // it into place again rather than mounting a second one behind it.
+    if (closing) setClosing(false)
+    else if (open) setClosing(true)
+    else setOpen(true)
+  }
 
   const clear = () => onChange(NO_FILTERS)
 
@@ -104,14 +148,14 @@ export function OrdersToolbar({
         <div className="flex shrink-0 items-center gap-1">
           <button
             type="button"
-            onClick={() => setOpen((previous) => !previous)}
-            aria-expanded={open}
+            onClick={toggle}
+            aria-expanded={expanded}
             aria-controls="order-filters"
             className={cn(
               // No ring: sharing a row with the tabs, an outlined button was the
               // heaviest thing in it, and it is the least important.
               'inline-flex h-8 items-center gap-2 rounded-md px-2.5 text-[13px] font-medium transition-colors',
-              open || applied > 0
+              expanded || applied > 0
                 ? 'bg-neutral-fill text-ink'
                 : 'text-ink-secondary hover:bg-neutral-fill hover:text-ink',
             )}
@@ -128,7 +172,7 @@ export function OrdersToolbar({
             )}
             <ChevronDown
               size={14}
-              className={cn('text-ink-muted transition-transform', open && 'rotate-180')}
+              className={cn('text-ink-muted transition-transform', expanded && 'rotate-180')}
             />
           </button>
 
@@ -145,7 +189,14 @@ export function OrdersToolbar({
       {open && (
         <div
           id="order-filters"
-          className="flex flex-wrap items-center gap-2 pt-3 motion-safe:animate-[descend_140ms_ease-out]"
+          className={cn(
+            'flex flex-wrap items-center gap-2 pt-3',
+            closing
+              ? // `forwards`, so the row holds its last frame instead of
+                // flashing back to full for the tick before it unmounts.
+                'pointer-events-none motion-safe:animate-[ascend_120ms_ease-in_forwards]'
+              : 'motion-safe:animate-[descend_140ms_ease-out]',
+          )}
         >
           <MultiSelect
             label="Status"
@@ -182,6 +233,19 @@ export function OrdersToolbar({
               ...users.map((user) => ({ value: user.id, label: user.name })),
             ]}
             className="w-[170px]"
+          />
+
+          {/* The only one of the four that cannot be scanned: statuses and
+              priorities are a handful of fixed words, but the customer list is
+              as long as the book of business and grows with it. */}
+          <MultiSelect
+            label="Customer"
+            placeholder="Any customer"
+            searchable
+            selected={filters.customer}
+            onChange={(customer) => onChange({ customer })}
+            options={customers.map((name) => ({ value: name, label: name }))}
+            className="w-[180px]"
           />
 
           {isFiltered && <ClearButton onClick={clear} className="h-9" />}

@@ -144,6 +144,15 @@
   }
 }
 
+/* And back the way it came. Faster than the entry and easing in rather than
+   out, because leaving is not the part worth watching. */
+@keyframes ascend {
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
 @keyframes lift {
   from {
     opacity: 0;

@@ -1,6 +1,6 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { Check, ChevronDown, X } from 'lucide-react'
+import { Check, ChevronDown, Search, X } from 'lucide-react'
 import { cn } from '@/lib/cn'
 
 export interface MultiSelectOption {
@@ -26,6 +26,7 @@ export function MultiSelect({
   onChange,
   placeholder,
   label,
+  searchable = false,
   className,
 }: {
   options: MultiSelectOption[]
@@ -35,14 +36,25 @@ export function MultiSelect({
   placeholder: string
   /** Names the control for screen readers, since there is no visible label. */
   label: string
+  /* For lists nobody can be expected to scan. Six statuses are read faster than
+     they are typed; four hundred customers are not read at all. */
+  searchable?: boolean
   className?: string
 }) {
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
+  const [query, setQuery] = useState('')
   const rootRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
+  const searchRef = useRef<HTMLInputElement>(null)
   const listId = useId()
+
+  const matches = useMemo(() => {
+    const needle = query.trim().toLowerCase()
+    if (!searchable || needle === '') return options
+    return options.filter((option) => option.label.toLowerCase().includes(needle))
+  }, [options, query, searchable])
 
   useEffect(() => {
     if (!open) return
@@ -54,11 +66,24 @@ export function MultiSelect({
     return () => document.removeEventListener('mousedown', onPointerDown)
   }, [open])
 
-  // Opening moves focus into the list, so the keyboard and the pointer end up
-  // in the same place; closing hands it back to the trigger that was pressed.
+  /* Opening moves focus into the panel, so the keyboard and the pointer end up
+     in the same place; closing hands it back to the trigger that was pressed.
+     Where it lands is the search box when there is one, since a list worth
+     searching is a list worth typing at straight away. */
   useEffect(() => {
-    if (open) listRef.current?.focus()
-  }, [open])
+    if (open) (searchable ? searchRef : listRef).current?.focus()
+    else setQuery('')
+  }, [open, searchable])
+
+  // The highlight is an index into what is on screen, so a narrowed list starts
+  // at its own first row rather than pointing past the end of itself.
+  useEffect(() => setActive(0), [query])
+
+  // Arrowing past the fold should bring the row with it.
+  useEffect(() => {
+    if (!open) return
+    document.getElementById(`${listId}-${active}`)?.scrollIntoView({ block: 'nearest' })
+  }, [active, open, listId])
 
   const close = () => {
     setOpen(false)
@@ -66,7 +91,9 @@ export function MultiSelect({
   }
 
   const toggle = (value: string) => {
-    onChange(selected.includes(value) ? selected.filter((held) => held !== value) : [...selected, value])
+    onChange(
+      selected.includes(value) ? selected.filter((held) => held !== value) : [...selected, value],
+    )
   }
 
   const chosen = options.filter((option) => selected.includes(option.value))
@@ -79,20 +106,24 @@ export function MultiSelect({
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault()
       const step = e.key === 'ArrowDown' ? 1 : -1
-      setActive((current) => Math.min(options.length - 1, Math.max(0, current + step)))
+      setActive((current) => Math.min(matches.length - 1, Math.max(0, current + step)))
       return
     }
-    if (e.key === 'Home' || e.key === 'End') {
+    // Both keys belong to the caret once there is a field to type in, and a
+    // space that ticks a box cannot also be a space in "de Vries".
+    if (!searchable && (e.key === 'Home' || e.key === 'End')) {
       e.preventDefault()
-      setActive(e.key === 'Home' ? 0 : options.length - 1)
+      setActive(e.key === 'Home' ? 0 : matches.length - 1)
       return
     }
-    if (e.key === 'Enter' || e.key === ' ') {
+    if (e.key === 'Enter' || (!searchable && e.key === ' ')) {
       e.preventDefault()
-      const option = options[active]
+      const option = matches[active]
       if (option) toggle(option.value)
     }
   }
+
+  const activeId = matches[active] ? `${listId}-${active}` : undefined
 
   return (
     <div ref={rootRef} className={cn('relative', className)}>
@@ -130,61 +161,89 @@ export function MultiSelect({
 
       {open && (
         <div
-          ref={listRef}
-          id={listId}
-          role="listbox"
-          aria-multiselectable
-          aria-label={label}
-          aria-activedescendant={options[active] ? `${listId}-${active}` : undefined}
-          tabIndex={-1}
           onKeyDown={onKeyDown}
           className={cn(
-            'absolute left-0 z-40 mt-1.5 max-h-72 w-max max-w-[18rem] min-w-full overflow-y-auto',
-            'rounded-lg border border-hairline bg-surface py-1 shadow-lg focus:outline-none',
+            'absolute left-0 z-40 mt-1.5 flex max-h-72 w-max max-w-[18rem] min-w-full flex-col',
+            'rounded-lg border border-hairline bg-surface py-1 shadow-lg',
             // Hangs off the trigger above it, so it drops rather than rises.
             'motion-safe:animate-[descend_100ms_ease-out]',
           )}
         >
-          {options.map((option, index) => {
-            const isSelected = selected.includes(option.value)
+          {searchable && (
+            <div className="flex shrink-0 items-center gap-2 border-b border-hairline px-3 pb-1.5">
+              <Search size={13} className="shrink-0 text-ink-muted" />
+              <input
+                ref={searchRef}
+                type="text"
+                role="combobox"
+                aria-expanded
+                aria-controls={listId}
+                aria-activedescendant={activeId}
+                aria-label={`Search ${label.toLowerCase()}`}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search"
+                className="w-full bg-transparent py-1 text-[13px] text-ink placeholder:text-ink-muted focus:outline-none"
+              />
+            </div>
+          )}
 
-            return (
-              <div
-                key={option.value}
-                id={`${listId}-${index}`}
-                role="option"
-                aria-selected={isSelected}
-                onClick={() => toggle(option.value)}
-                onMouseEnter={() => setActive(index)}
-                className={cn(
-                  'flex cursor-pointer items-center gap-2.5 px-3 py-1.5 text-[13px] text-ink',
-                  index === active && 'bg-neutral-fill',
-                )}
-              >
-                <span
-                  aria-hidden
+          <div
+            ref={listRef}
+            id={listId}
+            role="listbox"
+            aria-multiselectable
+            aria-label={label}
+            aria-activedescendant={searchable ? undefined : activeId}
+            tabIndex={searchable ? undefined : -1}
+            className="min-h-0 flex-1 overflow-y-auto focus:outline-none"
+          >
+            {matches.map((option, index) => {
+              const isSelected = selected.includes(option.value)
+
+              return (
+                <div
+                  key={option.value}
+                  id={`${listId}-${index}`}
+                  role="option"
+                  aria-selected={isSelected}
+                  onClick={() => toggle(option.value)}
+                  onMouseEnter={() => setActive(index)}
                   className={cn(
-                    'grid size-4 shrink-0 place-items-center rounded-[4px] border transition-colors',
-                    isSelected ? 'border-brand bg-brand text-white' : 'border-hairline bg-surface',
+                    'flex cursor-pointer items-center gap-2.5 px-3 py-1.5 text-[13px] text-ink',
+                    index === active && 'bg-neutral-fill',
                   )}
                 >
-                  {isSelected && <Check size={11} strokeWidth={3} />}
-                </span>
-
-                <span className="truncate">{option.label}</span>
-                {option.hint !== undefined && (
-                  <span className="ml-auto shrink-0 pl-2 text-[12px] text-ink-muted">
-                    {option.hint}
+                  <span
+                    aria-hidden
+                    className={cn(
+                      'grid size-4 shrink-0 place-items-center rounded-[4px] border transition-colors',
+                      isSelected ? 'border-brand bg-brand text-white' : 'border-hairline bg-surface',
+                    )}
+                  >
+                    {isSelected && <Check size={11} strokeWidth={3} />}
                   </span>
-                )}
-              </div>
-            )
-          })}
+
+                  <span className="truncate">{option.label}</span>
+                  {option.hint !== undefined && (
+                    <span className="ml-auto shrink-0 pl-2 text-[12px] text-ink-muted">
+                      {option.hint}
+                    </span>
+                  )}
+                </div>
+              )
+            })}
+
+            {matches.length === 0 && (
+              <p className="px-3 py-2 text-[13px] text-ink-muted">No matches</p>
+            )}
+          </div>
 
           {/* Unpicking six statuses one at a time to get back to "all" is the
-              cost of letting someone pick six in the first place. */}
+              cost of letting someone pick six in the first place. Outside the
+              scrolling list, or a long one would bury the way out of itself. */}
           {selected.length > 0 && (
-            <div className="mt-1 border-t border-hairline pt-1">
+            <div className="mt-1 shrink-0 border-t border-hairline pt-1">
               <button
                 type="button"
                 onClick={() => onChange([])}
