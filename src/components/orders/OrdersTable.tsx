@@ -6,15 +6,27 @@ import { ORDER_COLUMN_COUNT, OrderRow } from './OrderRow'
 import type { Order, OrderStatus, User } from '@/lib/types'
 import type { SkuIndex } from '@/lib/derive'
 
+/* Widths are declared rather than derived. Left to itself the browser sizes
+   each column to whatever happens to be in it, so switching stages shifted
+   every boundary — Completed has no advance button and Shipped has no "2d
+   overdue", and the whole grid slid sideways to suit. Fixed columns cost a few
+   pixels of fit and buy a table that stays still.
+
+   Customer is the one column left flexible, because it is also the only one
+   already set to truncate. */
+const CHECKBOX_WIDTH = 40
+const ACTIONS_WIDTH = 250
+
 const columns = [
-  'Order',
-  'Customer',
-  'Ship by',
-  'Status (step)',
-  'Priority',
-  'Assignee',
-  'Items',
-  'Stock',
+  { label: 'Order', width: 104 },
+  // Takes whatever is left over.
+  { label: 'Customer', width: null },
+  { label: 'Ship by', width: 118 },
+  { label: 'Status (step)', width: 124 },
+  { label: 'Priority', width: 98 },
+  { label: 'Assignee', width: 166 },
+  { label: 'Items', width: 90 },
+  { label: 'Stock', width: 108 },
 ] as const
 
 export function OrdersTable({
@@ -52,10 +64,21 @@ export function OrdersTable({
   return (
     <div className="overflow-hidden rounded-table border border-hairline bg-surface">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[1080px] border-collapse">
+        <table className="w-full min-w-[1200px] table-fixed border-collapse">
+          <colgroup>
+            <col style={{ width: CHECKBOX_WIDTH }} />
+            {columns.map((column) => (
+              <col
+                key={column.label}
+                style={column.width ? { width: column.width } : undefined}
+              />
+            ))}
+            <col style={{ width: ACTIONS_WIDTH }} />
+          </colgroup>
+
           <thead>
             <tr className="border-b border-hairline bg-surface-sunken">
-              <th className="w-10 py-2.5 pl-5">
+              <th className="py-2.5 pl-5">
                 <Checkbox
                   checked={allSelected}
                   indeterminate={selectedHere > 0 && !allSelected}
@@ -64,8 +87,8 @@ export function OrdersTable({
                 />
               </th>
               {columns.map((column) => (
-                <th key={column} className="label-text py-2.5 pr-4 text-left">
-                  {column}
+                <th key={column.label} className="label-text py-2.5 pr-4 text-left">
+                  {column.label}
                 </th>
               ))}
               <th className="label-text py-2.5 pr-5 text-right">Actions</th>

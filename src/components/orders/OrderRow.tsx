@@ -84,7 +84,9 @@ export function OrderRow({
           </button>
         </td>
 
-        <td className="max-w-[220px] truncate py-2.5 pr-4 text-[13px] text-ink">{order.customer}</td>
+        {/* The column's own width governs now that the table is fixed, so this
+            only needs to say what happens when a name outgrows it. */}
+        <td className="truncate py-2.5 pr-4 text-[13px] text-ink">{order.customer}</td>
 
         <td className="py-2.5 pr-4">
           <DueCell due={due} />
