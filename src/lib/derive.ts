@@ -9,7 +9,7 @@ import type {
   Priority,
 } from './types'
 
-export const ORDER_FLOW: OrderStatus[] = ['new', 'in_progress', 'packed', 'shipped', 'completed']
+export const ORDER_FLOW: OrderStatus[] = ['new', 'assigned', 'packed', 'shipped', 'completed']
 
 /** An order still needs work from the floor. */
 export function isActive(order: Order): boolean {
@@ -58,12 +58,13 @@ export const LANES: Array<{
     label: 'New',
     description: 'Just in, nobody has picked them up yet',
     empty: 'No new orders waiting.',
-    bulkActions: ['assign', 'in_progress'],
+    // Handing one over is the only way out of here, so it is the only move.
+    bulkActions: ['assign'],
   },
   {
-    id: 'in_progress',
-    label: 'In progress',
-    description: 'Being picked, waiting to be boxed',
+    id: 'assigned',
+    label: 'Assigned',
+    description: 'Picked up by somebody, waiting to be boxed',
     empty: 'Nothing is being worked on.',
     bulkActions: ['packed', 'assign'],
   },
@@ -137,7 +138,7 @@ export function laneCounts(orders: Order[], now: Date, skus: SkuIndex): Record<L
   const counts = {
     needs_attention: 0,
     new: 0,
-    in_progress: 0,
+    assigned: 0,
     packed: 0,
     shipped: 0,
     completed: 0,
@@ -249,8 +250,8 @@ export const STATUS_META: Record<
   { label: string; fill: string; text: string; dot: string }
 > = {
   new: { label: 'New', fill: 'bg-neutral-fill', text: 'text-neutral-text', dot: 'bg-ink-muted' },
-  in_progress: {
-    label: 'In progress',
+  assigned: {
+    label: 'Assigned',
     fill: 'bg-progress-fill',
     text: 'text-progress-text',
     dot: 'bg-progress-text',
@@ -282,14 +283,17 @@ export const PRIORITY_META: Record<Priority, { label: string; bar: string; text:
 
 /* The single most likely next step for an order. `label` is for the row, where
    a column of buttons has to stay narrow; `long` is for the detail panel, which
-   has the room to name the move in full. */
+   has the room to name the move in full.
+
+   Nothing is offered for a new order. Its next step is to be handed to
+   somebody, and that is not a status move — the status follows from it. */
 export function nextAction(
   status: OrderStatus,
 ): { label: string; long: string; next: OrderStatus } | null {
   switch (status) {
     case 'new':
-      return { label: 'Mark in progress', long: 'Mark as in progress', next: 'in_progress' }
-    case 'in_progress':
+      return null
+    case 'assigned':
       return { label: 'Mark packed', long: 'Mark as packed', next: 'packed' }
     case 'packed':
       return { label: 'Mark shipped', long: 'Mark as shipped', next: 'shipped' }

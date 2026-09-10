@@ -58,10 +58,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     )
   }, [])
 
+  /* Assigned is not a stage somebody puts an order into; it is what an order
+     with an owner is. So handing over a new order moves it, and taking the
+     owner back off one moves it home — anything else leaves a tab called
+     Assigned holding orders with nobody's name on them. Orders further along
+     keep their status: a packed order changing hands is still packed. */
   const assign = useCallback((ids: string[], assigneeId: string | null) => {
     const target = new Set(ids)
     setOrders((prev) =>
-      prev.map((order) => (target.has(order.id) ? { ...order, assigneeId } : order)),
+      prev.map((order) => {
+        if (!target.has(order.id)) return order
+
+        let status = order.status
+        if (assigneeId !== null && status === 'new') status = 'assigned'
+        else if (assigneeId === null && status === 'assigned') status = 'new'
+
+        return { ...order, assigneeId, status }
+      }),
     )
   }, [])
 
@@ -84,10 +97,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const removeUser = useCallback((id: string) => {
     setUsers((prev) => prev.filter((user) => user.id !== id))
-    // Orders they were holding fall back to the Unassigned lane rather than
-    // pointing at somebody who is gone.
+    // Orders they were holding fall back to unassigned rather than pointing at
+    // somebody who is gone, and back to New with it if that is all they were.
     setOrders((prev) =>
-      prev.map((order) => (order.assigneeId === id ? { ...order, assigneeId: null } : order)),
+      prev.map((order) =>
+        order.assigneeId === id
+          ? {
+              ...order,
+              assigneeId: null,
+              status: order.status === 'assigned' ? 'new' : order.status,
+            }
+          : order,
+      ),
     )
   }, [])
 

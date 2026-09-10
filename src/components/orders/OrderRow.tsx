@@ -3,7 +3,7 @@ import { Checkbox } from '@/components/ui/Checkbox'
 import { Button } from '@/components/ui/Button'
 import { Menu } from '@/components/ui/Menu'
 import { AssigneeCell, DueCell, Mono, PriorityFlag, StatusSteps, StockIndicator } from './cells'
-import { STATUS_META, dueLabel, nextAction, orderStock } from '@/lib/derive'
+import { ORDER_FLOW, STATUS_META, dueLabel, nextAction, orderStock } from '@/lib/derive'
 import type { SkuIndex } from '@/lib/derive'
 import type { Order, OrderStatus, User } from '@/lib/types'
 import { cn } from '@/lib/cn'
@@ -119,13 +119,16 @@ export function OrderRow({
 
       <td className="py-3 pr-2 pl-2 text-right">
         <div className="inline-flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-          {/* The move itself, down to a square. Spelled out it needed room
-              for "Mark in progress" on every row, and reserving that much for
-              a button only visible on hover left a void beside every stock
-              reading. Standing rather than appearing on hover is also the
-              more honest trade: this is the action the floor performs all day,
-              so it should not have to be discovered. The words are in the
-              tooltip, the overflow menu and the details panel. */}
+          {/* The move itself, down to a square. Spelled out it needed room for
+              "Mark as completed" on every row, and reserving that much for a
+              button only visible on hover left a void beside every stock
+              reading. Standing rather than appearing on hover is also the more
+              honest trade: this is the action the floor performs all day, so it
+              should not have to be discovered. The words are in the tooltip,
+              the overflow menu and the details panel.
+
+              A new order has no square, because assigning it is what moves it
+              on and that is done from the pane or the selection bar. */}
           {advance && (
             <Button
               size="sm"
@@ -142,8 +145,11 @@ export function OrderRow({
           <Menu
             header="Move to"
             items={[
-              ...(['new', 'in_progress', 'packed', 'shipped', 'completed'] as OrderStatus[])
-                .filter((s) => s !== order.status)
+              ...ORDER_FLOW
+                // Assigned is not somewhere an order can simply be put. It is
+                // where one lands when it is handed to somebody, so it is not
+                // offered to an order nobody is holding.
+                .filter((s) => s !== order.status && !(s === 'assigned' && !order.assigneeId))
                 .map((s) => ({
                   label: STATUS_META[s].label,
                   onSelect: () => onStatus(s),

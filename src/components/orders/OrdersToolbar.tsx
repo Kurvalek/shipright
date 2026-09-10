@@ -7,9 +7,9 @@ import { ORDER_FLOW } from '@/lib/derive'
 import type { OrderStatus, Priority, User } from '@/lib/types'
 import { cn } from '@/lib/cn'
 
-/* Each of the three narrowings holds a list rather than a value, and an empty
-   list means "all". "New or In progress" is an ordinary thing to ask this list
-   for, and a single value could only answer half of it. */
+/* Each narrowing holds a list rather than a value, and an empty list means
+   "all". "New or Assigned" is an ordinary thing to ask this list for, and a
+   single value could only answer half of it. */
 export interface Filters {
   search: string
   status: OrderStatus[]
@@ -38,9 +38,13 @@ export function normalizeFilters(stored: Partial<Filters> | null | undefined): F
     return typeof value === 'string' && value !== '' ? [value] : []
   }
 
+  // The stage kept its place in the flow and lost its old name, so a filter
+  // saved under it still means what it meant.
+  const renamed = (value: string) => (value === 'in_progress' ? 'assigned' : value)
+
   return {
     search: typeof stored?.search === 'string' ? stored.search : '',
-    status: list(stored?.status) as OrderStatus[],
+    status: list(stored?.status).map(renamed) as OrderStatus[],
     priority: list(stored?.priority) as Priority[],
     assignee: list(stored?.assignee),
     customer: list(stored?.customer),

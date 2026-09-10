@@ -36,7 +36,7 @@ export function BulkActionBar({
 
   const meta: Record<BulkAction, { label: string; icon: ReactNode }> = {
     assign: { label: 'Assign to...', icon: <UserPlus size={14} /> },
-    in_progress: { label: 'Mark as in progress', icon: <PlayCircle size={14} /> },
+    assigned: { label: 'Mark as assigned', icon: <PlayCircle size={14} /> },
     packed: { label: 'Mark as packed', icon: <Boxes size={14} /> },
     shipped: { label: 'Mark as shipped', icon: <Truck size={14} /> },
     completed: { label: 'Mark as completed', icon: <Check size={14} /> },

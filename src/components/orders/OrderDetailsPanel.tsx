@@ -123,7 +123,9 @@ export function OrderDetailsPanel({
           {advance.long}
         </Button>
       ) : (
-        <span className="px-1 text-[12px] text-ink-muted">Closed out</span>
+        <span className="px-1 text-[12px] text-ink-muted">
+          {order.status === 'new' ? 'Assign it to start' : 'Closed out'}
+        </span>
       )}
     </>
   )

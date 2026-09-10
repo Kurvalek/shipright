@@ -1,4 +1,7 @@
-export type OrderStatus = 'new' | 'in_progress' | 'packed' | 'shipped' | 'completed'
+/* `assigned` rather than `in_progress`, because having an owner is the thing
+   that is actually true of an order at that point and the thing that puts it
+   there. See `assign` in the store: the two cannot drift apart. */
+export type OrderStatus = 'new' | 'assigned' | 'packed' | 'shipped' | 'completed'
 
 export type Priority = 'rush' | 'standard' | 'bulk'
 

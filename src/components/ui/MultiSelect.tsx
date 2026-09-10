@@ -12,7 +12,7 @@ export interface MultiSelectOption {
 
 /* A native select can hold one value, and its multiple form is a scrolling box
    that asks the reader to hold ctrl. Filters are the one place on this page
-   where "New or In progress" is an ordinary thing to want, so they get a list
+   where "New or Assigned" is an ordinary thing to want, so they get a list
    of checkboxes behind a trigger instead.
 
    The list is a listbox with a roving active option rather than a stack of
