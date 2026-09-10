@@ -4,6 +4,7 @@ import outOfStock from '@/assets/icons/out-of-stock.png'
 import truckClock from '@/assets/icons/truck-clock.png'
 import truckLoading from '@/assets/icons/truck-loading.png'
 import truckShipped from '@/assets/icons/truck-shipped.png'
+import { CountUp } from '@/components/ui/CountUp'
 import type { LaneId } from '@/lib/types'
 import { cn } from '@/lib/cn'
 
@@ -79,7 +80,7 @@ export function OrderStatCards({
                 <span
                   className={cn('display tnum mt-1.5 block text-[26px] leading-none', tone.value)}
                 >
-                  {card.value}
+                  <CountUp value={card.value} />
                 </span>
 
                 <p className="mt-1.5 truncate text-[12px] text-ink-muted">{card.footnote}</p>
