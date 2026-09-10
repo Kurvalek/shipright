@@ -68,6 +68,7 @@ export default function Orders() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [openId, setOpenId] = useState<string | null>(null)
   const [undo, setUndo] = useState<{ message: string; snapshots: Order[] } | null>(null)
+  const [landed, setLanded] = useState<{ lane: LaneId; token: number } | null>(null)
 
   // A single clock for the whole render, so stage membership and every ship-by
   // label agree with each other.
@@ -282,32 +283,78 @@ export default function Orders() {
     [selectedOrders],
   )
 
-  const plural = (n: number) => `${n} ${n === 1 ? 'order' : 'orders'}`
+  /* One order is worth naming; a hundred are worth counting. "ORD-0130 marked
+     shipped" is the sentence a picker would say about their own click. */
+  const subject = (moved: Order[]) =>
+    moved.length === 1 ? moved[0]!.id : `${moved.length} orders`
+
+  const snapshot = useCallback(
+    (ids: string[]) => {
+      const wanted = new Set(ids)
+      return orders.filter((order) => wanted.has(order.id)).map((order) => ({ ...order }))
+    },
+    [orders],
+  )
+
+  /* Every move goes through here, whichever control started it — the square on
+     a row, the overflow menu, the pane, or the selection bar. They all used to
+     reach past this to the store, so a single order could change stage with no
+     word about it and no way back. */
+  const moveStatus = useCallback(
+    (ids: string[], status: OrderStatus) => {
+      const moved = snapshot(ids)
+      if (moved.length === 0) return
+
+      setStatus(ids, status)
+      setUndo({
+        // Same word the tab and the pill use, so the report matches the action.
+        message: `${subject(moved)} marked ${STATUS_META[status].label.toLowerCase()}`,
+        snapshots: moved,
+      })
+      setLanded({ lane: status, token: Date.now() })
+    },
+    [snapshot, setStatus],
+  )
+
+  const moveAssign = useCallback(
+    (ids: string[], assigneeId: string | null) => {
+      const moved = snapshot(ids)
+      if (moved.length === 0) return
+
+      const name = users.find((user) => user.id === assigneeId)?.name ?? 'worker'
+      assign(ids, assigneeId)
+      setUndo({
+        message: assigneeId
+          ? `${subject(moved)} assigned to ${name}`
+          : `${subject(moved)} unassigned`,
+        snapshots: moved,
+      })
+
+      /* Handing over a new order is a move between stages as much as any
+         other, so it gets pointed at the same way. */
+      const from: OrderStatus = assigneeId ? 'new' : 'assigned'
+      const to: OrderStatus = assigneeId ? 'assigned' : 'new'
+      if (moved.some((order) => order.status === from)) {
+        setLanded({ lane: to, token: Date.now() })
+      }
+    },
+    [snapshot, assign, users],
+  )
 
   const bulkStatus = useCallback(
     (status: OrderStatus) => {
-      const snapshots = selectedOrders.map((order) => ({ ...order }))
-      setStatus(selectedIds, status)
-      setUndo({
-        // Same word the tab and the pill use, so the report matches the action.
-        message: `${plural(snapshots.length)} marked ${STATUS_META[status].label.toLowerCase()}`,
-        snapshots,
-      })
+      moveStatus(selectedIds, status)
       clearSelection()
     },
-    [selectedOrders, selectedIds, setStatus, clearSelection],
+    [moveStatus, selectedIds, clearSelection],
   )
 
   const bulkAssign = useCallback(
     (assigneeId: string) => {
-      const snapshots = selectedOrders.map((order) => ({ ...order }))
-      const name = users.find((user) => user.id === assigneeId)?.name ?? 'worker'
-
-      assign(selectedIds, assigneeId)
-      setUndo({ message: `${plural(snapshots.length)} assigned to ${name}`, snapshots })
+      moveAssign(selectedIds, assigneeId)
       clearSelection()
     },
-    [selectedOrders, selectedIds, assign, users, clearSelection],
+    [moveAssign, selectedIds, clearSelection],
   )
 
   const runUndo = useCallback(() => {
@@ -351,7 +398,7 @@ export default function Orders() {
         users={workers}
         customers={customers}
       >
-        <StageTabs active={lane} counts={counts} onChange={changeLane} />
+        <StageTabs active={lane} counts={counts} landed={landed} onChange={changeLane} />
       </OrdersToolbar>
 
       <OrdersTable
@@ -369,8 +416,8 @@ export default function Orders() {
         onToggleSelect={toggleSelect}
         onToggleAll={toggleAll}
         onOpen={setOpenId}
-        onStatus={setStatus}
-        onAssign={assign}
+        onStatus={moveStatus}
+        onAssign={moveAssign}
       />
 
       {/* Leaves room for the docked bar so it never covers the last row. */}
@@ -404,8 +451,8 @@ export default function Orders() {
         skus={skus}
         now={now}
         onClose={() => setOpenId(null)}
-        onStatus={(id, status) => setStatus([id], status)}
-        onAssign={(id, assigneeId) => assign([id], assigneeId)}
+        onStatus={(id, status) => moveStatus([id], status)}
+        onAssign={(id, assigneeId) => moveAssign([id], assigneeId)}
         onNotes={setNotes}
       />
     </>

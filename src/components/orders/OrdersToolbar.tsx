@@ -53,6 +53,8 @@ export function normalizeFilters(stored: Partial<Filters> | null | undefined): F
 
 /** How long the row is kept mounted past the press that closed it. */
 const EXIT_MS = 120
+/** Matches the row's own entry, so the table settles as the controls arrive. */
+const ENTER_MS = 140
 
 export function sameFilters(a: Filters, b: Filters): boolean {
   const same = (x: string[], y: string[]) =>
@@ -111,20 +113,33 @@ export function OrdersToolbar({
   const [closing, setClosing] = useState(false)
   const expanded = open && !closing
 
+  /* Whether the row is currently changing height, which is the only time it can
+     be clipped. Unfolding needs `overflow: hidden` to hide what has not been
+     let out yet, and a filter menu opening inside a box with that on it would
+     be cut off at the edge — so the clipping lasts exactly as long as the
+     movement does and no longer. */
+  const [moving, setMoving] = useState(false)
+
   useEffect(() => {
-    if (!closing) return
+    if (!open && !closing) return
 
     /* Timed rather than waiting on `animationend`, which never fires when the
        animation is the one `motion-safe` withholds — the row would stay on the
        page for good. */
-    const wait = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : EXIT_MS
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const wait = still ? 0 : closing ? EXIT_MS : ENTER_MS
+
+    setMoving(!still)
     const timer = window.setTimeout(() => {
-      setOpen(false)
-      setClosing(false)
+      setMoving(false)
+      if (closing) {
+        setOpen(false)
+        setClosing(false)
+      }
     }, wait)
 
     return () => window.clearTimeout(timer)
-  }, [closing])
+  }, [open, closing])
 
   const toggle = () => {
     // Caught mid-fold. The row never left, so swapping the keyframe back drops
@@ -191,20 +206,38 @@ export function OrdersToolbar({
       </div>
 
       {open && (
+        /* The height itself, so the table below slides rather than jumping the
+           row's full depth in one frame. A grid track from `0fr` to `1fr` is
+           the one way to animate to a height nobody has measured — the row is
+           four controls that wrap, and hard-coding what that comes to would
+           break the first time one of them changed. */
         <div
-          id="order-filters"
           className={cn(
-            'flex flex-wrap items-center gap-2 pt-3',
-            closing
-              ? // `forwards`, so the row holds its last frame instead of
-                // flashing back to full for the tick before it unmounts.
-                'pointer-events-none motion-safe:animate-[ascend_120ms_ease-in_forwards]'
-              : 'motion-safe:animate-[descend_140ms_ease-out]',
+            'grid grid-rows-[1fr]',
+            // One or the other, never both: `cn` only joins, so two animation
+            // classes on one element leaves the stylesheet's order to pick.
+            moving &&
+              (closing
+                ? 'motion-safe:animate-[fold_120ms_ease-in_forwards]'
+                : 'motion-safe:animate-[unfold_140ms_ease-out]'),
           )}
         >
+          <div className={moving ? 'overflow-hidden' : undefined}>
+            <div
+              id="order-filters"
+              className={cn(
+                'flex flex-wrap items-center gap-2 pt-3',
+                closing
+                  ? // `forwards`, so the row holds its last frame instead of
+                    // flashing back to full for the tick before it unmounts.
+                    'pointer-events-none motion-safe:animate-[ascend_120ms_ease-in_forwards]'
+                  : 'motion-safe:animate-[descend_140ms_ease-out]',
+              )}
+            >
           <MultiSelect
             label="Status"
             placeholder="All statuses"
+            plural="statuses"
             selected={filters.status}
             onChange={(status) => onChange({ status: status as OrderStatus[] })}
             options={ORDER_FLOW.map((status) => ({
@@ -217,6 +250,7 @@ export function OrdersToolbar({
           <MultiSelect
             label="Priority"
             placeholder="All priorities"
+            plural="priorities"
             selected={filters.priority}
             onChange={(priority) => onChange({ priority: priority as Priority[] })}
             options={[
@@ -229,7 +263,8 @@ export function OrdersToolbar({
 
           <MultiSelect
             label="Assignee"
-            placeholder="Anyone"
+            placeholder="Any assignee"
+            plural="assignees"
             selected={filters.assignee}
             onChange={(assignee) => onChange({ assignee })}
             options={[
@@ -245,6 +280,7 @@ export function OrdersToolbar({
           <MultiSelect
             label="Customer"
             placeholder="Any customer"
+            plural="customers"
             searchable
             selected={filters.customer}
             onChange={(customer) => onChange({ customer })}
@@ -252,7 +288,9 @@ export function OrdersToolbar({
             className="w-[180px]"
           />
 
-          {isFiltered && <ClearButton onClick={clear} className="h-9" />}
+              {isFiltered && <ClearButton onClick={clear} className="h-9" />}
+            </div>
+          </div>
         </div>
       )}
     </div>

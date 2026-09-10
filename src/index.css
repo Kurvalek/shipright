@@ -144,6 +144,42 @@
   }
 }
 
+/* Small enough to be a tick appearing rather than a thing growing. Paired with
+   an overshooting curve at the call site, which is where the spring is. */
+@keyframes pop {
+  from {
+    scale: 0.4;
+  }
+}
+
+/* A number catching something. Starts overshot and in the brand colour, then
+   settles back into the muted grey it lives in — the pop is the arrival, and
+   what is left afterwards is an ordinary count. */
+@keyframes land {
+  0% {
+    scale: 1.45;
+    color: var(--color-brand);
+  }
+  55% {
+    color: var(--color-brand);
+  }
+}
+
+/* The height a row takes up, rather than the row. A grid track is the only
+   thing that interpolates to a height nobody has measured, which is what lets
+   the page below slide instead of jumping. */
+@keyframes unfold {
+  from {
+    grid-template-rows: 0fr;
+  }
+}
+
+@keyframes fold {
+  to {
+    grid-template-rows: 0fr;
+  }
+}
+
 /* And back the way it came. Faster than the entry and easing in rather than
    out, because leaving is not the part worth watching. */
 @keyframes ascend {

@@ -13,16 +13,21 @@ import { cn } from '@/lib/cn'
 export function StageTabs({
   active,
   counts,
+  landed,
   onChange,
 }: {
   active: LaneId
   counts: Record<LaneId, number>
+  /* Where orders have just arrived. `token` changes on every move so a second
+     move to the same stage plays again rather than sitting still. */
+  landed?: { lane: LaneId; token: number } | null
   onChange: (lane: LaneId) => void
 }) {
   return (
     <div role="tablist" aria-label="Fulfillment stage" className="flex min-w-0 gap-1 overflow-x-auto">
       {LANES.map((lane) => {
         const isActive = lane.id === active
+        const justLanded = landed?.lane === lane.id
 
         return (
           <button
@@ -39,8 +44,23 @@ export function StageTabs({
             {lane.label}
 
             {/* font-normal rather than inherited, so the count stays at one
-                weight while the label bolds under the selection. */}
-            <span className="tnum font-normal text-ink-muted">{counts[lane.id]}</span>
+                weight while the label bolds under the selection.
+
+                Remounted on arrival, by key, because an animation class added
+                to an element already wearing it does not start over — and
+                moving two orders to Packed in a row should be two answers. */}
+            <span
+              key={justLanded ? landed.token : 'idle'}
+              className={cn(
+                'tnum font-normal text-ink-muted',
+                // Where the order went, said by the number it went into. The
+                // row itself leaves the stage you are looking at, so without
+                // this the only report is one that has to be read.
+                justLanded && 'motion-safe:animate-[land_600ms_ease-out]',
+              )}
+            >
+              {counts[lane.id]}
+            </span>
 
             {/* Sits on the rule under the row rather than above it, so the
                 stage you are in reads as a break in the line. */}

@@ -26,6 +26,7 @@ export function MultiSelect({
   onChange,
   placeholder,
   label,
+  plural,
   searchable = false,
   className,
 }: {
@@ -36,6 +37,8 @@ export function MultiSelect({
   placeholder: string
   /** Names the control for screen readers, since there is no visible label. */
   label: string
+  /** What several of these are called, for the count: "3 customers". */
+  plural: string
   /* For lists nobody can be expected to scan. Six statuses are read faster than
      they are typed; four hundred customers are not read at all. */
   searchable?: boolean
@@ -142,15 +145,17 @@ export function MultiSelect({
           chosen.length > 0 ? 'text-ink' : 'text-ink-muted',
         )}
       >
-        <span className="truncate">{chosen[0]?.label ?? placeholder}</span>
-
-        {/* The first pick stays legible and the rest are counted. A trigger
-            that lists everything chosen either truncates mid-word or sets the
-            width of the row it is in. */}
-        {chosen.length > 1 && (
-          <span className="tnum shrink-0 rounded bg-neutral-fill px-1 text-[11.5px] font-medium text-ink-secondary">
-            +{chosen.length - 1}
+        {/* One pick is worth naming. Past that the trigger stops trying: a name
+            with "+2" after it reads as though the first one counts for more
+            than the rest, when what has actually been asked for is a set. A
+            trigger that listed them all would either truncate mid-word or set
+            the width of the row it is in. */}
+        {chosen.length > 1 ? (
+          <span className="tnum shrink-0 rounded bg-neutral-fill px-1.5 py-0.5 text-[11.5px] font-medium text-ink-secondary">
+            {chosen.length} {plural}
           </span>
+        ) : (
+          <span className="truncate">{chosen[0]?.label ?? placeholder}</span>
         )}
 
         <ChevronDown
