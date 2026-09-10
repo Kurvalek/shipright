@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { ArrowRight, X } from 'lucide-react'
+import { AlertTriangle, ArrowRight, X } from 'lucide-react'
 import { SidePanel } from '@/components/ui/SidePanel'
 import { Button } from '@/components/ui/Button'
 import { Select, Textarea } from '@/components/ui/Field'
@@ -224,6 +224,21 @@ function DetailBody({
 
       <StageMeter status={order.status} onChange={(next) => onStatus(order.id, next)} />
 
+      {/* Said once, up here, before any of the fields. Short stock is the only
+          thing in this panel that stops the order rather than describing it,
+          and it was being reported in the same voice as the placed date. */}
+      {stock.state === 'out' && (
+        <p className="mt-4 flex items-start gap-2 rounded-md bg-danger-fill px-3 py-2 text-[13px] font-medium text-danger-text">
+          <AlertTriangle size={14} className="mt-px shrink-0" />
+          <span>
+            {stock.outCount === 1
+              ? '1 item cannot be picked'
+              : `${stock.outCount} items cannot be picked`}
+            <span className="font-normal"> — not enough on the shelf to fill this order.</span>
+          </span>
+        </p>
+      )}
+
       <div className="mt-5 grid grid-cols-2 gap-x-5 gap-y-3.5 border-t border-hairline-subtle pt-4">
         <Fact label="Ship by">
           <DueCell due={due} />
@@ -381,23 +396,53 @@ const lineTone = {
 
 /* A bar per line rather than a row in a six-column table. The fill is how much
    of what the order needs is actually on the shelf, so a short line is visible
-   as a gap without having to compare two numbers. */
+   as a gap without having to compare two numbers.
+
+   Which leaves the worst case with the least to show for itself: nothing on the
+   shelf draws no bar at all, and an empty track beside four full ones is easy
+   to read as a line that has not loaded. So a line that cannot be picked is
+   banded, ruled down its edge and made to say the word — the one state worth
+   interrupting the list for is the one the list was quietest about. */
 function LineItem({ line }: { line: LineStock }) {
   const tone = lineTone[line.state]
+  const isOut = line.state === 'out'
   const coverage = Math.max(0, Math.min(1, line.onHand / Math.max(1, line.required)))
+  const short = line.required - line.onHand
 
   return (
-    <li>
+    <li
+      className={cn(
+        isOut && '-mx-2 rounded-r border-l-2 border-danger-dot bg-danger-fill/60 py-2 pr-2 pl-2.5',
+      )}
+    >
       <div className="flex items-baseline justify-between gap-3">
-        <span className="truncate text-[13.5px] text-ink">{line.name}</span>
+        <span className={cn('truncate text-[13.5px]', isOut ? 'font-medium text-ink' : 'text-ink')}>
+          {line.name}
+        </span>
         <span className={cn('tnum shrink-0 text-[13px]', tone.text)}>
           {line.required} / {line.onHand}
         </span>
       </div>
 
+      {isOut && (
+        <p className="mt-1 flex items-center gap-1.5 text-[12px] font-medium text-danger-text">
+          <AlertTriangle size={12} className="shrink-0" />
+          {/* The number the picker is actually missing, which neither "1 / 0"
+              nor an empty bar ever says outright. */}
+          {line.onHand === 0 ? 'None on the shelf' : `${short} short of the pick`}
+        </p>
+      )}
+
       <div className="mt-1.5 flex items-center gap-2.5">
         <Mono className="shrink-0 text-[11.5px] text-ink-muted">{line.sku}</Mono>
-        <span className="h-[4px] min-w-0 flex-1 overflow-hidden rounded-full bg-mauve-soft">
+        <span
+          className={cn(
+            'h-[4px] min-w-0 flex-1 overflow-hidden rounded-full',
+            // An empty track that is itself the alarm colour, so zero coverage
+            // reads as a shortfall rather than as a bar nobody drew.
+            isOut ? 'bg-danger-dot/25' : 'bg-mauve-soft',
+          )}
+        >
           <span
             className={cn('block h-full rounded-full', tone.fill)}
             style={{ width: `${coverage * 100}%` }}
