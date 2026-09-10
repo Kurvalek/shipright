@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { StageTabs } from '@/components/orders/StageTabs'
 import { OrderStatCards } from '@/components/orders/OrderStatCards'
 import type { Callout } from '@/components/orders/OrderStatCards'
-import { OrdersToolbar } from '@/components/orders/OrdersToolbar'
+import { NO_FILTERS, OrdersToolbar, normalizeFilters, sameFilters } from '@/components/orders/OrdersToolbar'
 import type { Filters } from '@/components/orders/OrdersToolbar'
 import { OrdersTable } from '@/components/orders/OrdersTable'
 import { BulkActionBar } from '@/components/orders/BulkActionBar'
@@ -34,18 +34,7 @@ import { useTopBarSearch } from '@/lib/topbarSearch'
 import { usePersistentState } from '@/lib/usePersistentState'
 import type { LaneId, Order, OrderStatus } from '@/lib/types'
 
-const NO_FILTERS: Filters = { search: '', status: '', priority: '', assignee: '' }
-
 const DEFAULT_LANE: LaneId = 'needs_attention'
-
-function sameFilters(a: Filters, b: Filters): boolean {
-  return (
-    a.search === b.search &&
-    a.status === b.status &&
-    a.priority === b.priority &&
-    a.assignee === b.assignee
-  )
-}
 
 export default function Orders() {
   const { orders, inventory, users, workers, setStatus, assign, restore, setNotes } = useStore()
@@ -60,7 +49,12 @@ export default function Orders() {
   // Stage and filters persist. Selection and expansion are per-session,
   // because they describe a task in progress, not a preference.
   const [storedLane, setLane] = usePersistentState<LaneId>('orders.lane', DEFAULT_LANE)
-  const [filters, setFilters] = usePersistentState<Filters>('orders.filters', NO_FILTERS)
+  const [storedFilters, setFilters] = usePersistentState<Filters>('orders.filters', NO_FILTERS)
+
+  /* Guards against filters saved by a build that held one value per question
+     rather than a list. Keyed on the stored object, so this runs when a filter
+     changes and not on every render. */
+  const filters = useMemo(() => normalizeFilters(storedFilters), [storedFilters])
 
   /* Which groups are folded away is a preference too. Held as a list rather
      than a Set because a Set does not survive the trip through JSON. */
@@ -91,12 +85,14 @@ export default function Orders() {
 
     const filtered = orders.filter((order) => {
       if (!matchesLane(order, lane, now, skus)) return false
-      if (filters.status && order.status !== filters.status) return false
-      if (filters.priority && order.priority !== filters.priority) return false
 
-      if (filters.assignee === 'none') {
-        if (order.assigneeId !== null) return false
-      } else if (filters.assignee && order.assigneeId !== filters.assignee) {
+      // An empty list is every value, and a list of several is any of them.
+      if (filters.status.length && !filters.status.includes(order.status)) return false
+      if (filters.priority.length && !filters.priority.includes(order.priority)) return false
+
+      // Nobody assigned is a choice you can make alongside named workers, so
+      // it travels as an id of its own rather than as a separate flag.
+      if (filters.assignee.length && !filters.assignee.includes(order.assigneeId ?? 'none')) {
         return false
       }
 
@@ -162,8 +158,11 @@ export default function Orders() {
 
   const clearSelection = useCallback(() => setSelected(new Set()), [])
 
+  // Normalising the previous value on the way in, rather than only on the way
+  // out, is what retires an old-shape record from storage the first time the
+  // reader touches a filter.
   const patchFilters = useCallback(
-    (patch: Partial<Filters>) => setFilters((prev) => ({ ...prev, ...patch })),
+    (patch: Partial<Filters>) => setFilters((prev) => ({ ...normalizeFilters(prev), ...patch })),
     [setFilters],
   )
 
