@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Plus } from 'lucide-react'
-import { HeaderStat, PageHeader } from '@/components/layout/PageHeader'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { PaneDock } from '@/components/layout/PaneDock'
 import { Button } from '@/components/ui/Button'
 import { StageTabs } from '@/components/orders/StageTabs'
@@ -21,7 +21,6 @@ import {
   buildSkuIndex,
   isActive,
   isOverdue,
-  isSameDay,
   laneCounts,
   matchesLane,
   orderStock,
@@ -119,7 +118,6 @@ export default function Orders() {
      makes overdue plus blocked come to the tab's own total. */
   const urgency = useMemo(() => {
     let overdue = 0
-    let today = 0
     let blocked = 0
     for (const order of orders) {
       if (!isActive(order)) continue
@@ -127,10 +125,9 @@ export default function Orders() {
         overdue += 1
         continue
       }
-      if (isSameDay(new Date(order.dueAt), now)) today += 1
       if (orderStock(order, skus).state === 'out') blocked += 1
     }
-    return { overdue, today, blocked }
+    return { overdue, blocked }
   }, [orders, now, skus])
 
   /* Needs attention is the one stage that collects orders for two unrelated
@@ -327,11 +324,8 @@ export default function Orders() {
 
   return (
     <>
-      {/* Overdue moved onto a card, so the only number left up here is the one
-          with neither a card nor a tab of its own. */}
       <PageHeader
         title="Orders"
-        stats={<HeaderStat label="Due today" value={urgency.today} />}
         actions={
           <Button variant="primary" icon={<Plus size={15} />}>
             New order

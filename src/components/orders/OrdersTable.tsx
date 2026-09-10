@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import type { ReactNode } from 'react'
 import { ChevronRight, PackageOpen } from 'lucide-react'
 import { Checkbox } from '@/components/ui/Checkbox'
@@ -104,21 +105,29 @@ export function OrdersTable({
      stack of zeroed titles. */
   if (groups && orders.length > 0) {
     return (
-      <div className="space-y-7">
-        {groups.map((group) => {
+      <div>
+        {groups.map((group, index) => {
           const collapsed = collapsedGroups?.has(group.id) ?? false
 
           return (
-            <section key={group.id}>
-              <GroupTitle
-                label={group.label}
-                count={group.orders.length}
-                collapsed={collapsed}
-                onToggle={() => onToggleGroup?.(group.id)}
-              />
+            <Fragment key={group.id}>
+              {/* Space alone left it ambiguous whether the second title
+                  belonged to the table above or the one below it. Drawn to the
+                  width of the tables rather than the pane, like the rule under
+                  the tabs. */}
+              {index > 0 && <div aria-hidden className="-mx-2 my-7 border-t border-hairline" />}
 
-              {!collapsed && group.orders.length > 0 && <Grid orders={group.orders} {...rows} />}
-            </section>
+              <section>
+                <GroupTitle
+                  label={group.label}
+                  count={group.orders.length}
+                  collapsed={collapsed}
+                  onToggle={() => onToggleGroup?.(group.id)}
+                />
+
+                {!collapsed && group.orders.length > 0 && <Grid orders={group.orders} {...rows} />}
+              </section>
+            </Fragment>
           )
         })}
       </div>
