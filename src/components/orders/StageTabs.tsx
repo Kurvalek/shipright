@@ -6,15 +6,17 @@ import { cn } from '@/lib/cn'
    pills, because these are the structure of the work, not one filter among many
    — the toolbar they sit in is where narrowing happens.
 
-   Six labels and nothing else. The counts came off first, then the dot that
-   replaced the one on Needs attention: what is stuck is already announced by
-   the Overdue card above, in red, with the number attached. A second alarm on
-   the tab underneath it was the same news told twice and quieter. */
+   The counts are set plainly beside their labels: no badge, no weight of their
+   own, and lighter than the word they follow. How much work is waiting in each
+   stage is worth knowing at a glance, but it is not what you are reading the
+   row for. */
 export function StageTabs({
   active,
+  counts,
   onChange,
 }: {
   active: LaneId
+  counts: Record<LaneId, number>
   onChange: (lane: LaneId) => void
 }) {
   return (
@@ -30,11 +32,15 @@ export function StageTabs({
             title={lane.description}
             onClick={() => onChange(lane.id)}
             className={cn(
-              'group relative shrink-0 px-3 py-2.5 text-[15px] whitespace-nowrap transition-colors',
+              'group relative flex shrink-0 items-center gap-1.5 px-3 py-2.5 text-[15px] whitespace-nowrap transition-colors',
               isActive ? 'font-medium text-ink' : 'text-ink-secondary hover:text-ink',
             )}
           >
             {lane.label}
+
+            {/* font-normal rather than inherited, so the count stays at one
+                weight while the label bolds under the selection. */}
+            <span className="tnum font-normal text-ink-muted">{counts[lane.id]}</span>
 
             {/* Sits on the rule under the row rather than above it, so the
                 stage you are in reads as a break in the line. */}
