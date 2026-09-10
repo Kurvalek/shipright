@@ -15,7 +15,7 @@ export function StageTabs({
   onChange: (lane: LaneId) => void
 }) {
   return (
-    <div className="-mx-8 mb-4 border-b border-hairline px-8">
+    <div className="mb-4">
       <div role="tablist" aria-label="Fulfillment stage" className="flex gap-1 overflow-x-auto">
         {LANES.map((lane) => {
           const isActive = lane.id === active
@@ -31,7 +31,7 @@ export function StageTabs({
               title={lane.description}
               onClick={() => onChange(lane.id)}
               className={cn(
-                'group relative flex shrink-0 items-center gap-2 px-3 py-2.5 text-[13.5px] whitespace-nowrap transition-colors',
+                'group relative flex shrink-0 items-center gap-2 px-3 py-2.5 text-[15px] whitespace-nowrap transition-colors',
                 isActive ? 'font-medium text-ink' : 'text-ink-secondary hover:text-ink',
               )}
             >
@@ -47,7 +47,9 @@ export function StageTabs({
               {lane.label}
               <span
                 className={cn(
-                  'tnum grid h-[19px] min-w-[19px] place-items-center rounded px-1 text-[11px] font-medium tabular-nums',
+                  // Scaled with the label, so the count stays a companion to
+                  // the word rather than a footnote to it.
+                  'tnum grid h-[21px] min-w-[21px] place-items-center rounded px-1.5 text-[12px] font-medium tabular-nums',
                   isActive
                     ? isRisk
                       ? 'bg-risk-fill text-risk-text'
@@ -58,11 +60,13 @@ export function StageTabs({
                 {count}
               </span>
 
-              {/* Sits on the container's border so the active tab joins the rule. */}
+              {/* Marks only the tab it belongs to. Without a rule running the
+                  width of the page there is nothing for it to sit on, so it
+                  ends at the tab's own edges. */}
               <span
                 aria-hidden
                 className={cn(
-                  'absolute inset-x-0 -bottom-px h-0.5 rounded-full transition-colors',
+                  'absolute inset-x-0 bottom-0 h-[3px] rounded-full transition-colors',
                   isActive ? 'bg-brand' : 'bg-transparent group-hover:bg-hairline',
                 )}
               />
