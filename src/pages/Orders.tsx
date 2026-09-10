@@ -4,6 +4,8 @@ import { HeaderStat, PageHeader } from '@/components/layout/PageHeader'
 import { PaneDock } from '@/components/layout/PaneDock'
 import { Button } from '@/components/ui/Button'
 import { StageTabs } from '@/components/orders/StageTabs'
+import { OrderStatCards } from '@/components/orders/OrderStatCards'
+import type { Callout } from '@/components/orders/OrderStatCards'
 import { OrdersToolbar } from '@/components/orders/OrdersToolbar'
 import type { Filters } from '@/components/orders/OrdersToolbar'
 import { OrdersTable } from '@/components/orders/OrdersTable'
@@ -120,6 +122,43 @@ export default function Orders() {
 
   useTopBarSearch(filters.search, setSearch, 'Search orders by ID, customer or SKU')
 
+  /* The numbers that decide what a shift does next. Overdue is the only one
+     that is not a stage of its own, and the only one that earns a colour. */
+  const callouts = useMemo<Callout[]>(
+    () => [
+      {
+        label: 'Overdue',
+        value: urgency.overdue,
+        footnote: 'Past its ship-by time',
+        sprite: 'truck-clock',
+        lane: 'needs_attention',
+        tone: 'risk',
+      },
+      {
+        label: 'New',
+        value: counts.new,
+        footnote: 'Nobody assigned yet',
+        sprite: 'box-open',
+        lane: 'new',
+      },
+      {
+        label: 'Packed',
+        value: counts.packed,
+        footnote: 'Waiting on a carrier',
+        sprite: 'truck-loading',
+        lane: 'packed',
+      },
+      {
+        label: 'Shipped',
+        value: counts.shipped,
+        footnote: 'Left the building',
+        sprite: 'truck-shipped',
+        lane: 'shipped',
+      },
+    ],
+    [urgency.overdue, counts],
+  )
+
   const changeLane = useCallback(
     (next: LaneId) => {
       setLane(next)
@@ -215,20 +254,19 @@ export default function Orders() {
 
   return (
     <>
+      {/* Overdue moved onto a card, so the only number left up here is the one
+          with neither a card nor a tab of its own. */}
       <PageHeader
         title="Orders"
-        stats={
-          <>
-            <HeaderStat label="Overdue" value={urgency.overdue} tone="risk" />
-            <HeaderStat label="Due today" value={urgency.today} />
-          </>
-        }
+        stats={<HeaderStat label="Due today" value={urgency.today} />}
         actions={
           <Button variant="primary" icon={<Plus size={15} />}>
             New order
           </Button>
         }
       />
+
+      <OrderStatCards cards={callouts} onSelect={changeLane} />
 
       <StageTabs active={lane} counts={counts} onChange={changeLane} />
 
