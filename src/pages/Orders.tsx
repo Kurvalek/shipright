@@ -73,7 +73,6 @@ export default function Orders() {
   const lane = LANES.some((l) => l.id === storedLane) ? storedLane : DEFAULT_LANE
 
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [expandedId, setExpandedId] = useState<string | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
   const [undo, setUndo] = useState<{ message: string; snapshots: Order[] } | null>(null)
 
@@ -212,9 +211,10 @@ export default function Orders() {
   const changeLane = useCallback(
     (next: LaneId) => {
       setLane(next)
-      // A selection made in one stage rarely means the same thing in another.
+      // A selection made in one stage rarely means the same thing in another,
+      // and the open record has probably just left the list behind it.
       clearSelection()
-      setExpandedId(null)
+      setOpenId(null)
     },
     [setLane, clearSelection],
   )
@@ -353,13 +353,11 @@ export default function Orders() {
         skus={skus}
         now={now}
         selected={selected}
-        expandedId={expandedId}
         openId={openId}
         compact={compactTable}
         empty={empty}
         onToggleSelect={toggleSelect}
         onToggleAll={toggleAll}
-        onToggleExpand={(id) => setExpandedId((prev) => (prev === id ? null : id))}
         onOpen={setOpenId}
         onStatus={setStatus}
         onAssign={assign}

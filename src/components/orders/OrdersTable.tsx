@@ -29,10 +29,13 @@ export interface OrderGroup {
    they are the ones to give up, since the reader is looking at a fuller
    version of the same fact a few hundred pixels to the right. */
 const CHECKBOX_WIDTH = 36
-const ACTIONS_WIDTH = 138
+/* An advance square and an overflow button. The "View" link that used to sit
+   between them is gone: the row itself opens the record now. */
+const ACTIONS_WIDTH = 84
 
 const allColumns = [
-  { label: 'Order', width: 122, compactWidth: null, secondary: false },
+  // No disclosure triangle in front of the ID any more, so it needs less room.
+  { label: 'Order', width: 100, compactWidth: null, secondary: false },
   // Splits the surplus with Assignee.
   { label: 'Customer', width: null, compactWidth: null, secondary: false },
   { label: 'Ship by', width: 108, compactWidth: null, secondary: false },
@@ -49,8 +52,8 @@ const allColumns = [
 
 /* The declared widths plus enough for a name in each of the two flexible
    columns. Below this the table scrolls rather than crushing them. */
-const FULL_MIN_WIDTH = 1000
-const COMPACT_MIN_WIDTH = 720
+const FULL_MIN_WIDTH = 920
+const COMPACT_MIN_WIDTH = 640
 
 export function OrdersTable({
   orders,
@@ -60,14 +63,12 @@ export function OrdersTable({
   skus,
   now,
   selected,
-  expandedId,
   openId,
   compact = false,
   empty,
   onToggleGroup,
   onToggleSelect,
   onToggleAll,
-  onToggleExpand,
   onOpen,
   onStatus,
   onAssign,
@@ -80,7 +81,6 @@ export function OrdersTable({
   skus: SkuIndex
   now: Date
   selected: Set<string>
-  expandedId: string | null
   /** The order the detail pane is showing, marked so the two stay tied together. */
   openId?: string | null
   /** Drops the columns the detail pane repeats, to survive the narrower page. */
@@ -89,7 +89,6 @@ export function OrdersTable({
   onToggleGroup?: (id: string) => void
   onToggleSelect: (id: string) => void
   onToggleAll: (next: boolean) => void
-  onToggleExpand: (id: string) => void
   onOpen: (id: string) => void
   onStatus: (ids: string[], status: OrderStatus) => void
   onAssign: (ids: string[], assigneeId: string | null) => void
@@ -173,11 +172,9 @@ export function OrdersTable({
                     skus={skus}
                     now={now}
                     selected={selected.has(order.id)}
-                    expanded={expandedId === order.id}
                     open={openId === order.id}
                     compact={compact}
                     onToggleSelect={() => onToggleSelect(order.id)}
-                    onToggleExpand={() => onToggleExpand(order.id)}
                     onOpen={() => onOpen(order.id)}
                     onStatus={(status) => onStatus([order.id], status)}
                     onAssign={(assigneeId) => onAssign([order.id], assigneeId)}

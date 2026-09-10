@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { ArrowRight, X } from 'lucide-react'
 import { SidePanel } from '@/components/ui/SidePanel'
@@ -46,14 +46,52 @@ export function OrderDetailsPanel({
      next to them. Under that the record goes back to floating over the list. */
   const docked = useMediaQuery('(min-width: 1100px)')
 
+  const orderId = order?.id ?? null
+  const storedNotes = order?.notes ?? ''
+
+  /* Keystrokes not yet written to the store, tagged with the record they belong
+     to so a note committed late still lands on the right order. */
+  const unsaved = useRef<{ id: string; notes: string } | null>(null)
+  const commit = useRef(onNotes)
+  commit.current = onNotes
+
+  const flush = useCallback(() => {
+    const pending = unsaved.current
+    if (!pending) return
+    unsaved.current = null
+    commit.current(pending.id, pending.notes)
+  }, [])
+
+  const changeNotes = useCallback(
+    (next: string) => {
+      setNotes(next)
+      if (orderId) unsaved.current = { id: orderId, notes: next }
+    },
+    [orderId],
+  )
+
+  /* Only when the record changes, never when the store echoes back a write of
+     our own — that would clobber whatever has been typed since. Anything still
+     pending belongs to the record being left, so it goes in first. */
   useEffect(() => {
-    setNotes(order?.notes ?? '')
-  }, [order?.id, order?.notes])
+    flush()
+    setNotes(storedNotes)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderId, flush])
+
+  /* The pause is only there to keep a keystroke from rewriting a store a couple
+     of hundred orders deep on every character. Closing or switching records
+     does not wait for it. */
+  useEffect(() => {
+    if (!unsaved.current) return
+    const timer = setTimeout(flush, 400)
+    return () => clearTimeout(timer)
+  }, [notes, flush])
 
   if (!order) return null
 
-  const dirty = notes !== (order.notes ?? '')
-  const save = () => onNotes(order.id, notes)
+  const advance = nextAction(order.status)
+  const saving = notes !== storedNotes
 
   const body = (
     <DetailBody
@@ -62,20 +100,31 @@ export function OrderDetailsPanel({
       skus={skus}
       now={now}
       notes={notes}
-      onNotesChange={setNotes}
+      saving={saving}
+      onNotesChange={changeNotes}
       onStatus={onStatus}
       onAssign={onAssign}
     />
   )
 
+  /* The move, not a save. Notes write themselves, so the one thing left worth
+     committing from down here is the step the order takes next. */
   const actions = (
     <>
       <Button variant="ghost" onClick={onClose}>
         Close
       </Button>
-      <Button variant="primary" disabled={!dirty} onClick={save}>
-        Save notes
-      </Button>
+      {advance ? (
+        <Button
+          variant="primary"
+          iconRight={<ArrowRight size={14} />}
+          onClick={() => onStatus(order.id, advance.next)}
+        >
+          {advance.long}
+        </Button>
+      ) : (
+        <span className="px-1 text-[12px] text-ink-muted">Closed out</span>
+      )}
     </>
   )
 
@@ -142,6 +191,7 @@ function DetailBody({
   skus,
   now,
   notes,
+  saving,
   onNotesChange,
   onStatus,
   onAssign,
@@ -151,31 +201,23 @@ function DetailBody({
   skus: SkuIndex
   now: Date
   notes: string
+  /** Keystrokes the store has not caught up with yet. */
+  saving: boolean
   onNotesChange: (next: string) => void
   onStatus: (id: string, status: OrderStatus) => void
   onAssign: (id: string, assigneeId: string | null) => void
 }) {
   const stock = orderStock(order, skus)
   const due = dueLabel(order, now)
-  const advance = nextAction(order.status)
   const units = order.lines.reduce((sum, line) => sum + line.qty, 0)
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="mb-3 flex items-center justify-between gap-3">
+      {/* The next step is the panel's one committing action, so it sits in the
+          footer with the rest of them rather than up here beside the stage it
+          is about to change. */}
+      <div className="mb-3">
         <StatusPill status={order.status} />
-        {advance ? (
-          <Button
-            variant="primary"
-            size="sm"
-            iconRight={<ArrowRight size={13} />}
-            onClick={() => onStatus(order.id, advance.next)}
-          >
-            {advance.label}
-          </Button>
-        ) : (
-          <span className="text-[12px] text-ink-muted">Closed out</span>
-        )}
       </div>
 
       <StageMeter status={order.status} onChange={(next) => onStatus(order.id, next)} />
@@ -235,9 +277,18 @@ function DetailBody({
       {/* Takes whatever the record above it did not need, rather than leaving a
           short order with a band of empty panel under it. */}
       <div className="mt-4 flex min-h-[104px] flex-1 flex-col border-t border-hairline-subtle pt-4">
-        <label htmlFor="notes" className="label-text mb-1.5 block shrink-0">
-          Notes
-        </label>
+        {/* There is no save button for notes, so the only thing that says they
+            are being kept is this, the first time you type into the field. */}
+        <div className="mb-1.5 flex shrink-0 items-baseline justify-between gap-3">
+          <label htmlFor="notes" className="label-text">
+            Notes
+          </label>
+          {saving && (
+            <span aria-live="polite" className="text-[11px] text-ink-muted">
+              Saving…
+            </span>
+          )}
+        </div>
         <Textarea
           id="notes"
           value={notes}
