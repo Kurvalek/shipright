@@ -182,9 +182,14 @@ export default function Orders() {
   useTopBarSearch(filters.search, setSearch, 'Search orders by ID, customer or SKU')
 
   /* The three numbers that decide what a shift does next: what is already late,
-     what has not been picked up yet, and what cannot be picked at all. Overdue
-     keeps the only colour — with three cards up here, two alarms would leave
-     nothing for the eye to land on first. */
+     what has not been picked up yet, and what cannot be picked at all.
+
+     The first two are ruled and lettered in the same colours their groups carry
+     further down, so the card and the table it counts are recognisably the same
+     pile of orders. Two alarms rather than one used to be the worry — nothing
+     for the eye to land on first — but amber and red are not two of the same
+     thing: one is late, the other cannot be picked at all. The third stays
+     neutral, which is what keeps both of them reading as exceptions. */
   const callouts = useMemo<Callout[]>(
     () => [
       {
@@ -203,6 +208,7 @@ export default function Orders() {
         icon: 'out-of-stock',
         lane: 'needs_attention',
         group: 'stock',
+        tone: 'danger',
       },
       /* Last, because the first two are problems and this one is only work
          waiting. The row now reads worst to ordinary from left to right. */

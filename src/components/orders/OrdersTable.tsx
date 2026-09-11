@@ -5,7 +5,7 @@ import { Checkbox } from '@/components/ui/Checkbox'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { OrderRow, orderColumnCount } from './OrderRow'
 import type { Order, OrderStatus, User } from '@/lib/types'
-import type { SkuIndex } from '@/lib/derive'
+import type { AttentionTone, SkuIndex } from '@/lib/derive'
 import { cn } from '@/lib/cn'
 
 /** A named run of rows inside one stage, collapsible on its own. */
@@ -13,7 +13,26 @@ export interface OrderGroup {
   id: string
   label: string
   orders: Order[]
+  /** Carried up from the reason itself, so it matches the card counting it. */
+  tone?: AttentionTone
 }
+
+/* The heading and the column labels share a wash of the group's colour, which
+   is the same colour the card counting those orders is lettered in. That is the
+   whole of the tie between the two, and it is the header that carries it
+   because the header is what has to say where one section starts. */
+const groupTone = {
+  risk: { wash: 'bg-risk-fill/45', count: 'text-risk-text' },
+  danger: { wash: 'bg-danger-fill/45', count: 'text-danger-text' },
+} as const
+
+type GroupTone = (typeof groupTone)[AttentionTone]
+
+/* The table is boxed like the cards above it, in the same hairline and the same
+   corner. Left open on a white pane it had only its own rules to say where it
+   began and ended, so a stage was a run of lines rather than a thing — and the
+   header band, once it took a colour, had nothing to sit inside. */
+const FRAME = '-mx-2 overflow-hidden rounded-card border border-hairline'
 
 /* Widths are declared rather than derived. Left to itself the browser sizes
    each column to whatever happens to be in it, so switching stages shifted
@@ -115,20 +134,22 @@ export function OrdersTable({
       <div>
         {groups.map((group, index) => {
           const collapsed = collapsedGroups?.has(group.id) ?? false
+          const tone = group.tone ? groupTone[group.tone] : undefined
 
           return (
             <Fragment key={group.id}>
               {/* Space alone left it ambiguous whether the second title
-                  belonged to the table above or the one below it. Drawn to the
-                  width of the tables rather than the pane, like the rule under
-                  the tabs. */}
-              {index > 0 && <div aria-hidden className="-mx-2 my-7 border-t border-hairline" />}
+                  belonged to the table above or the one below it. Each group is
+                  inside its own box now, so the rule that used to be drawn here
+                  would only be a line between two edges. */}
+              {index > 0 && <div aria-hidden className="h-5" />}
 
-              <section>
+              <section className={FRAME}>
                 <GroupTitle
                   label={group.label}
                   count={group.orders.length}
                   collapsed={collapsed}
+                  tone={tone}
                   onToggle={() => onToggleGroup?.(group.id)}
                 />
 
@@ -149,7 +170,7 @@ export function OrdersTable({
                     )}
                   >
                     <div className="overflow-hidden">
-                      <Grid orders={group.orders} {...rows} />
+                      <Grid orders={group.orders} tone={tone} {...rows} />
                     </div>
                   </div>
                 )}
@@ -161,12 +182,17 @@ export function OrdersTable({
     )
   }
 
-  return <Grid orders={orders} empty={empty} {...rows} />
+  return (
+    <div className={FRAME}>
+      <Grid orders={orders} empty={empty} {...rows} />
+    </div>
+  )
 }
 
 function Grid({
   orders,
   empty,
+  tone,
   users,
   skus,
   now,
@@ -178,7 +204,12 @@ function Grid({
   onOpen,
   onStatus,
   onAssign,
-}: RowProps & { orders: Order[]; empty?: { title: string; body: string; action?: ReactNode } }) {
+}: RowProps & {
+  orders: Order[]
+  empty?: { title: string; body: string; action?: ReactNode }
+  /** Set when this run of rows is one group of a stage that has them. */
+  tone?: GroupTone
+}) {
   const ids = orders.map((order) => order.id)
   const selectedHere = ids.filter((id) => selected.has(id)).length
   const allSelected = orders.length > 0 && selectedHere === orders.length
@@ -195,10 +226,9 @@ function Grid({
   const share = (weight: number) => `${((weight / totalWeight) * 100).toFixed(4)}%`
 
   return (
-    /* No frame around the grid. A border and a fill were drawing a box around
-       something the white pane already contains, and the rules between rows are
-       the only lines the eye needs to track one across. */
-    <div className="-mx-2 overflow-x-auto">
+    /* The box is the caller's, since a grouped stage puts the heading inside it
+       too. All this has to do is let a grid wider than the page scroll. */
+    <div className="overflow-x-auto">
       <table
         className="w-full table-fixed border-collapse"
         style={{ minWidth: totalWeight }}
@@ -220,8 +250,12 @@ function Grid({
             thin enough to see through. The sunken white a step above it is 2%
             off the pane and disappeared; the chip fill a step below is doing
             hover and badge duty everywhere else, and a band of it would tie
-            the header to controls it has nothing to do with. */}
-        <thead className="bg-canvas">
+            the header to controls it has nothing to do with.
+
+            Inside a group it takes the group's colour instead and runs straight
+            on from the heading above it, so the two read as one block rather
+            than a title sitting on top of a table. */}
+        <thead className={tone?.wash ?? 'bg-canvas'}>
           <tr className="border-b border-hairline">
             <th className="py-2.5 pl-4">
               <Checkbox
@@ -280,46 +314,59 @@ function Grid({
    set like a heading: the size of the page's own subheads, in full ink, with
    the count trailing it in plain type. A chip around the number would make a
    heading look like a badge, and the tabs above gave theirs up for the same
-   reason. */
+   reason — the count takes the group's colour instead, which says the same
+   thing without building a second shape to say it in.
+
+   The heading sits in the band rather than above it, and the band runs the
+   width of the table and continues into its column labels, so the two read as
+   one block at the top of the box rather than a title balanced on a table. */
 function GroupTitle({
   label,
   count,
   collapsed,
+  tone,
   onToggle,
 }: {
   label: string
   count: number
   collapsed: boolean
+  tone?: GroupTone
   onToggle: () => void
 }) {
   // Nothing to hide, so there is nothing to collapse. The count still reports.
   const empty = count === 0
 
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      disabled={empty}
-      aria-expanded={empty ? undefined : !collapsed}
-      className={cn(
-        '-ml-1.5 mb-2 flex items-center gap-1.5 rounded-md py-1 pr-2.5 pl-1.5 text-left transition-colors',
-        !empty && 'hover:bg-surface-sunken',
-      )}
-    >
-      <ChevronRight
-        size={17}
+    <div className={cn('flex', tone?.wash)}>
+      <button
+        type="button"
+        onClick={onToggle}
+        disabled={empty}
+        aria-expanded={empty ? undefined : !collapsed}
         className={cn(
-          'shrink-0 text-ink-muted transition-transform',
-          empty && 'opacity-0',
-          !collapsed && !empty && 'rotate-90',
+          'flex flex-1 items-center gap-1.5 py-2.5 pr-2.5 pl-2.5 text-left transition-colors',
+          // A wash needs darkening rather than replacing: the sunken white the
+          // untinted heading uses would wipe the colour off on hover.
+          !empty && (tone ? 'hover:bg-black/[0.03]' : 'hover:bg-surface-sunken'),
         )}
-      />
+      >
+        <ChevronRight
+          size={17}
+          className={cn(
+            'shrink-0 text-ink-muted transition-transform',
+            empty && 'opacity-0',
+            !collapsed && !empty && 'rotate-90',
+          )}
+        />
 
-      <span className={cn('text-[16px] font-medium', empty ? 'text-ink-muted' : 'text-ink')}>
-        {label}
-      </span>
+        <span className={cn('text-[16px] font-medium', empty ? 'text-ink-muted' : 'text-ink')}>
+          {label}
+        </span>
 
-      <span className="tnum text-[13px] text-ink-muted">{count}</span>
-    </button>
+        <span className={cn('tnum text-[13px] font-medium', tone?.count ?? 'text-ink-muted')}>
+          {count}
+        </span>
+      </button>
+    </div>
   )
 }

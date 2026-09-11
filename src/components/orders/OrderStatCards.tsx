@@ -37,12 +37,17 @@ export interface Callout {
   lane: LaneId
   /** The group within that stage to open, when the stage has groups. */
   group?: string
-  tone?: 'brand' | 'risk'
+  tone?: 'brand' | 'risk' | 'danger'
 }
 
+/* The number and the icon carry the tone between them, and the group further
+   down the page answers with the same colour washed across its header. That is
+   enough to tie a card to the table it counts; a stripe down the edge of both
+   was a third statement of a thing already said twice. */
 const tones = {
   brand: { chip: 'bg-brand-tint', ink: 'text-brand', value: 'text-ink' },
   risk: { chip: 'bg-risk-fill', ink: 'text-risk-text', value: 'text-risk-text' },
+  danger: { chip: 'bg-danger-fill', ink: 'text-danger-text', value: 'text-danger-text' },
 } as const
 
 /* The numbers that decide what a shift does next, each one a way into the stage

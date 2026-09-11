@@ -104,9 +104,22 @@ export function buildSkuIndex(inventory: InventoryItem[]): SkuIndex {
    as its reason for being there. */
 export type AttentionReason = 'overdue' | 'stock'
 
-export const ATTENTION_REASONS: Array<{ id: AttentionReason; label: string }> = [
-  { id: 'overdue', label: 'Overdue' },
-  { id: 'stock', label: 'Missing stock' },
+/* Amber for late, red for blocked, and the ordering between them is the point:
+   a late order is work to hurry, a short one is work that cannot be done at all
+   until somebody finds stock. */
+export type AttentionTone = 'risk' | 'danger'
+
+/* The colour lives here rather than in either of the two places that draw it.
+   The callout card at the top of the page and the group further down are the
+   same set of orders counted twice, and the whole use of a tone is to say so —
+   which it cannot do if the two ends can be changed independently. */
+export const ATTENTION_REASONS: Array<{
+  id: AttentionReason
+  label: string
+  tone: AttentionTone
+}> = [
+  { id: 'overdue', label: 'Overdue', tone: 'risk' },
+  { id: 'stock', label: 'Missing stock', tone: 'danger' },
 ]
 
 /* Overdue wins when an order is both. A late order is late whether or not the
