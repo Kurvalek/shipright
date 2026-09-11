@@ -60,7 +60,7 @@ export function OrderRow({
     >
       {/* A rule down the left edge rather than another fill, so the row the
           pane is describing stays picked out even while it is also selected. */}
-      <td className={cn('w-10 pl-2', open && 'shadow-[inset_3px_0_0_0_var(--color-brand)]')}>
+      <td className={cn('w-10 pl-4', open && 'shadow-[inset_3px_0_0_0_var(--color-brand)]')}>
         <Checkbox checked={selected} onChange={onToggleSelect} label={`Select ${order.id}`} />
       </td>
 
@@ -117,7 +117,7 @@ export function OrderRow({
         <StockIndicator state={stock.state} lowCount={stock.lowCount} outCount={stock.outCount} />
       </td>
 
-      <td className="py-3 pr-2 pl-2 text-right">
+      <td className="py-3 pr-4 pl-2 text-right">
         <div className="inline-flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
           {/* The move itself, down to a square. Spelled out it needed room for
               "Mark as completed" on every row, and reserving that much for a

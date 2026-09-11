@@ -39,10 +39,16 @@ export interface OrderGroup {
    `secondary` marks the columns the detail pane repeats. With the pane open
    they are the ones to give up, since the reader is looking at a fuller
    version of the same fact a few hundred pixels to the right. */
-const CHECKBOX_WEIGHT = 30
-/* An advance square and an overflow button. The "View" link that used to sit
-   between them is gone: the row itself opens the record now. */
-const ACTIONS_WEIGHT = 72
+/* The box plus the gutter it is set in. The table bleeds a little past the page
+   column so a hovered row reads as a band rather than a panel, and without a
+   gutter of its own the checkbox landed on the page's own edge with only that
+   bleed beside it — closer to the rule under the tabs than to the ID it
+   belongs to. */
+const CHECKBOX_WEIGHT = 38
+/* An advance square and an overflow button, plus the matching gutter on the far
+   side. The "View" link that used to sit between them is gone: the row itself
+   opens the record now. */
+const ACTIONS_WEIGHT = 80
 
 const allColumns = [
   // No disclosure triangle in front of the ID any more, so it needs less room.
@@ -216,7 +222,7 @@ function Grid({
             the header to controls it has nothing to do with. */}
         <thead className="bg-canvas">
           <tr className="border-b border-hairline">
-            <th className="py-2.5 pl-2">
+            <th className="py-2.5 pl-4">
               <Checkbox
                 checked={allSelected}
                 indeterminate={selectedHere > 0 && !allSelected}
@@ -229,7 +235,7 @@ function Grid({
                 {column.label}
               </th>
             ))}
-            <th className={cn(HEADER_CELL, 'pr-2 text-right')}>Actions</th>
+            <th className={cn(HEADER_CELL, 'pr-4 text-right')}>Actions</th>
           </tr>
         </thead>
 
