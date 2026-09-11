@@ -117,28 +117,32 @@ export function OrderRow({
         <StockIndicator state={stock.state} lowCount={stock.lowCount} outCount={stock.outCount} />
       </td>
 
-      <td className="py-3 pr-4 pl-2 text-right">
+      <td className="py-3 pr-4 text-right">
         <div className="inline-flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-          {/* The move itself, down to a square. Spelled out it needed room for
-              "Mark as completed" on every row, and reserving that much for a
-              button only visible on hover left a void beside every stock
-              reading. Standing rather than appearing on hover is also the more
-              honest trade: this is the action the floor performs all day, so it
-              should not have to be discovered. The words are in the tooltip,
-              the overflow menu and the details panel.
+          {/* The move itself, named. It was a bare arrow in a square, which says
+              that something happens and leaves what to a tooltip nobody waits
+              for — an arrow on a row that already opens a record reads at least
+              as easily as "go there" as it does "move this on". One verb fixes
+              that, and the arrow stays behind it to say which way along the
+              stages it goes.
 
-              A new order has no square, because assigning it is what moves it
+              Standing rather than appearing on hover: this is the action the
+              floor performs all day, so it should not have to be discovered.
+              The full phrasing is still in the tooltip and the accessible name,
+              where there is room for "Mark as completed".
+
+              A new order has no button, because assigning it is what moves it
               on and that is done from the pane or the selection bar. */}
           {advance && (
             <Button
               size="sm"
               variant="secondary"
               onClick={() => onStatus(advance.next)}
+              iconRight={<ArrowRight size={13} className="text-ink-muted" />}
               title={advance.long}
               aria-label={`${advance.long}: ${order.id}`}
-              className="w-7 px-0"
             >
-              <ArrowRight size={15} />
+              {advance.label}
             </Button>
           )}
 

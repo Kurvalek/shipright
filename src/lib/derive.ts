@@ -285,6 +285,12 @@ export const PRIORITY_META: Record<Priority, { label: string; bar: string; text:
    a column of buttons has to stay narrow; `long` is for the detail panel, which
    has the room to name the move in full.
 
+   One word on the row, and the verb rather than the stage it lands in. A button
+   reading "Packed" names a state and leaves you to work out that pressing it
+   causes one; "Pack" is the thing you are about to do. The full phrase stays in
+   the tooltip and the accessible name, so the short form never has to be the
+   only account of the move.
+
    Nothing is offered for a new order. Its next step is to be handed to
    somebody, and that is not a status move — the status follows from it. */
 export function nextAction(
@@ -294,11 +300,11 @@ export function nextAction(
     case 'new':
       return null
     case 'assigned':
-      return { label: 'Mark packed', long: 'Mark as packed', next: 'packed' }
+      return { label: 'Pack', long: 'Mark as packed', next: 'packed' }
     case 'packed':
-      return { label: 'Mark shipped', long: 'Mark as shipped', next: 'shipped' }
+      return { label: 'Ship', long: 'Mark as shipped', next: 'shipped' }
     case 'shipped':
-      return { label: 'Mark completed', long: 'Mark as completed', next: 'completed' }
+      return { label: 'Complete', long: 'Mark as completed', next: 'completed' }
     case 'completed':
       return null
   }

@@ -45,10 +45,11 @@ export interface OrderGroup {
    bleed beside it — closer to the rule under the tabs than to the ID it
    belongs to. */
 const CHECKBOX_WEIGHT = 38
-/* An advance square and an overflow button, plus the matching gutter on the far
-   side. The "View" link that used to sit between them is gone: the row itself
-   opens the record now. */
-const ACTIONS_WEIGHT = 80
+/* The advance button and an overflow button, plus the matching gutter on the far
+   side. Wide enough for "Complete" and its arrow, which is the longest the move
+   is ever spelled on a row. The "View" link that used to sit between them is
+   gone: the row itself opens the record now. */
+const ACTIONS_WEIGHT = 136
 
 const allColumns = [
   // No disclosure triangle in front of the ID any more, so it needs less room.
