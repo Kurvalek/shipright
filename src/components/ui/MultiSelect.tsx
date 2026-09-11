@@ -140,7 +140,10 @@ export function MultiSelect({
         onClick={() => setOpen((previous) => !previous)}
         className={cn(
           'flex h-9 w-full items-center gap-1.5 rounded-md bg-surface px-3 text-[13px] transition-colors',
-          'ring-1 ring-hairline hover:ring-ink-muted/50 focus:ring-brand focus:outline-none',
+          // Three steps, each visibly darker than the last: at rest, under a
+          // pointer, and focused. The old resting edge was the same hairline the
+          // table rules use, which on white read as a suggestion of a control.
+          'ring-1 ring-hairline-strong hover:ring-ink-muted focus:ring-brand focus:outline-none',
           open && 'ring-brand',
           chosen.length > 0 ? 'text-ink' : 'text-ink-muted',
         )}

@@ -84,6 +84,9 @@
   --color-surface-sunken: #faf8f9;
   --color-hairline: #e4dde0;
   --color-hairline-subtle: #efeaec;
+  /* For edges that have to hold their own against white: a control at rest
+     reads as a control, without borrowing the focus colour to do it. */
+  --color-hairline-strong: #c8bcc2;
 
   /* Plum ink. */
   --color-ink: #3f2a31;
