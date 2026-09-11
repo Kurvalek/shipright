@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { AlertTriangle, ArrowRight, X } from 'lucide-react'
+import { AlertTriangle, ArrowRight, MapPin, X } from 'lucide-react'
 import { SidePanel } from '@/components/ui/SidePanel'
 import { Button } from '@/components/ui/Button'
 import { Select, Textarea } from '@/components/ui/Field'
@@ -274,17 +274,19 @@ function DetailBody({
           the notes off the bottom of the panel. It takes only the height its
           lines need and gives the rest to the notes below. */}
       <div className="mt-5 flex min-h-0 flex-col border-t border-hairline-subtle pt-4">
-        <div className="mb-2.5 flex shrink-0 items-baseline justify-between gap-3">
-          <span className="label-text">
+        <div className="mb-1 flex shrink-0 items-baseline justify-between gap-3">
+          <h3 className="text-[14px] font-medium text-ink">
             Order items
-            <span className="ml-1.5 text-ink-muted">
+            <span className="ml-1.5 text-[12.5px] font-normal text-ink-muted">
               {order.lines.length} {order.lines.length === 1 ? 'line' : 'lines'} · {units} units
             </span>
-          </span>
-          <span className="text-[11px] whitespace-nowrap text-ink-muted">need / on hand</span>
+          </h3>
+          {/* Names down one side, quantities down the other. One label over the
+              column is what lets the numbers stand on their own. */}
+          <span className="label-text shrink-0 text-ink-muted">On hand</span>
         </div>
 
-        <ul className="min-h-0 space-y-3 overflow-y-auto">
+        <ul className="-mx-3 min-h-0 divide-y divide-hairline-subtle overflow-y-auto">
           {stock.lines.map((line) => (
             <LineItem key={line.sku} line={line} />
           ))}
@@ -388,67 +390,75 @@ function StageMeter({
   )
 }
 
-const lineTone = {
-  ok: { text: 'text-ink', fill: 'bg-mauve' },
-  low: { text: 'text-risk-text font-medium', fill: 'bg-risk-edge' },
-  out: { text: 'text-danger-text font-medium', fill: 'bg-danger-dot' },
+/* Only the two states worth stopping for. A line that is fine says so by having
+   nothing to say, which is what keeps the exceptions visible.
+
+   Ruled down the edge rather than filled: the same mark the inventory table
+   uses for a short SKU. A wash of colour across the whole row shouts loud
+   enough to be the first thing read on a panel where the name should be, and
+   there are only ever a handful of lines for it to pick out. */
+const lineFlag = {
+  ok: null,
+  low: {
+    rule: 'shadow-[inset_2px_0_0_var(--color-risk-edge)]',
+    text: 'text-risk-text',
+    note: () => 'Low',
+  },
+  out: {
+    rule: 'shadow-[inset_2px_0_0_var(--color-danger-dot)]',
+    text: 'text-danger-text',
+    /* The number the picker is actually missing, which "1 / 0" never said
+       outright. Nothing at all needs no arithmetic and no sentence: the 0 above
+       has already said it, and the word only has to name the state. */
+    note: (line: LineStock) =>
+      line.onHand === 0 ? 'Out' : `${line.required - line.onHand} short`,
+  },
 } as const
 
-/* A bar per line rather than a row in a six-column table. The fill is how much
-   of what the order needs is actually on the shelf, so a short line is visible
-   as a gap without having to compare two numbers.
+/* Two columns and nothing between them: what the thing is on the left, how much
+   of it there is on the right. Both run straight down the list, so the panel is
+   read by dropping the eye down one side rather than across every row.
 
-   Which leaves the worst case with the least to show for itself: nothing on the
-   shelf draws no bar at all, and an empty track beside four full ones is easy
-   to read as a line that has not loaded. So a line that cannot be picked is
-   banded, ruled down its edge and made to say the word — the one state worth
-   interrupting the list for is the one the list was quietest about. */
+   What used to be here was a ratio — "2 / 165" — under a caption explaining
+   which number was which, and a bar whose fill was capped at what the order
+   needed. Two on the shelf and two hundred both drew the bar full, so it only
+   ever carried anything on a line that was short, and even then the shortfall
+   is a sentence, not a length. */
 function LineItem({ line }: { line: LineStock }) {
-  const tone = lineTone[line.state]
-  const isOut = line.state === 'out'
-  const coverage = Math.max(0, Math.min(1, line.onHand / Math.max(1, line.required)))
-  const short = line.required - line.onHand
+  const flag = lineFlag[line.state]
 
   return (
-    <li
-      className={cn(
-        isOut && '-mx-2 rounded-r border-l-2 border-danger-dot bg-danger-fill/60 py-2 pr-2 pl-2.5',
-      )}
-    >
-      <div className="flex items-baseline justify-between gap-3">
-        <span className={cn('truncate text-[13.5px]', isOut ? 'font-medium text-ink' : 'text-ink')}>
-          {line.name}
-        </span>
-        <span className={cn('tnum shrink-0 text-[13px]', tone.text)}>
-          {line.required} / {line.onHand}
-        </span>
+    <li className={cn('flex items-start gap-3 px-3 py-2.5', flag?.rule)}>
+      <div className="min-w-0 flex-1">
+        <p className="flex items-center gap-2">
+          <span className="truncate text-[14px] font-medium text-ink">{line.name}</span>
+          {/* How many to pick, kept beside the thing being picked rather than in
+              the column of shelf counts it would be read against. Set in a chip
+              like every other count in the app: it is the number the packer acts
+              on, and as plain muted text it was the quietest thing on the row. */}
+          <span className="tnum shrink-0 rounded bg-neutral-fill px-1.5 py-0.5 text-[12px] font-medium text-ink-secondary">
+            ×{line.required}
+          </span>
+        </p>
+
+        {/* The bin first and in the darker ink: it is where the picker walks.
+            The SKU trails it as the identifier to check once they are there. */}
+        <p className="mt-1 flex items-center gap-1.5 whitespace-nowrap">
+          <MapPin size={12} className="shrink-0 text-ink-muted" />
+          <Mono className="text-[12px] font-medium text-ink-secondary">{line.location}</Mono>
+          <Mono className="truncate text-[12px] text-ink-muted">{line.sku}</Mono>
+        </p>
       </div>
 
-      {isOut && (
-        <p className="mt-1 flex items-center gap-1.5 text-[12px] font-medium text-danger-text">
-          <AlertTriangle size={12} className="shrink-0" />
-          {/* The number the picker is actually missing, which neither "1 / 0"
-              nor an empty bar ever says outright. */}
-          {line.onHand === 0 ? 'None on the shelf' : `${short} short of the pick`}
+      <div className="shrink-0 text-right">
+        <p className={cn('tnum text-[16px] leading-none', flag ? flag.text : 'text-ink')}>
+          {line.onHand}
         </p>
-      )}
-
-      <div className="mt-1.5 flex items-center gap-2.5">
-        <Mono className="shrink-0 text-[11.5px] text-ink-muted">{line.sku}</Mono>
-        <span
-          className={cn(
-            'h-[4px] min-w-0 flex-1 overflow-hidden rounded-full',
-            // An empty track that is itself the alarm colour, so zero coverage
-            // reads as a shortfall rather than as a bar nobody drew.
-            isOut ? 'bg-danger-dot/25' : 'bg-mauve-soft',
-          )}
-        >
-          <span
-            className={cn('block h-full rounded-full', tone.fill)}
-            style={{ width: `${coverage * 100}%` }}
-          />
-        </span>
-        <span className="shrink-0 text-[11.5px] text-ink-muted">{line.location}</span>
+        {flag && (
+          <p className={cn('mt-1.5 text-[11.5px] font-medium whitespace-nowrap', flag.text)}>
+            {flag.note(line)}
+          </p>
+        )}
       </div>
     </li>
   )
