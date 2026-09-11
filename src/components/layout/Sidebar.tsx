@@ -10,7 +10,10 @@ import { useStore } from '@/lib/store'
 import { useShell } from '@/lib/shell'
 import { cn } from '@/lib/cn'
 
-const nav = [
+/* Exported because the top bar offers the same three when the rail cannot be
+   shown. One list, so a destination cannot exist in one place and not the
+   other. */
+export const NAV = [
   { to: '/orders', label: 'Orders', icon: ordersIcon },
   { to: '/inventory', label: 'Inventory', icon: inventoryIcon },
   { to: '/settings', label: 'Settings', icon: settingsIcon },
@@ -68,7 +71,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex flex-col gap-0.5">
-        {nav.map(({ to, label, icon }) => (
+        {NAV.map(({ to, label, icon }) => (
           <NavLink
             key={to}
             to={to}

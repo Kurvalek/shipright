@@ -9,6 +9,8 @@ export interface MenuItem {
   icon?: ReactNode
   danger?: boolean
   disabled?: boolean
+  /** The one already chosen. Marked rather than disabled: still a way back. */
+  active?: boolean
 }
 
 /** Where the panel sits, in viewport coordinates. */
@@ -127,6 +129,7 @@ export function Menu({
                 key={item.label}
                 type="button"
                 role="menuitem"
+                aria-current={item.active ? 'true' : undefined}
                 disabled={item.disabled}
                 onClick={() => {
                   setOpen(false)
@@ -137,10 +140,14 @@ export function Menu({
                   'disabled:pointer-events-none disabled:opacity-40',
                   item.danger
                     ? 'text-danger-text hover:bg-danger-fill'
-                    : 'text-ink hover:bg-neutral-fill',
+                    : item.active
+                      ? 'bg-mauve/50 font-medium text-brand'
+                      : 'text-ink hover:bg-neutral-fill',
                 )}
               >
-                {item.icon && <span className="text-ink-muted">{item.icon}</span>}
+                {item.icon && (
+                  <span className={item.active ? 'text-brand' : 'text-ink-muted'}>{item.icon}</span>
+                )}
                 {item.label}
               </button>
             ))}

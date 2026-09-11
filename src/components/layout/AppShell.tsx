@@ -20,21 +20,25 @@ export function AppShell({ children }: { children: ReactNode }) {
 }
 
 function ShellLayout({ children }: { children: ReactNode }) {
-  const { dockOpen, setDockHost } = useShell()
+  const { dockOpen, handheld, setDockHost } = useShell()
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-canvas">
       <TopBar />
 
       <div className="flex min-h-0 flex-1">
-        <Sidebar />
+        {/* Gone entirely on a handheld, not folded: the top bar carries the
+            three destinations in a menu there. */}
+        {!handheld && <Sidebar />}
 
         {/* An even canvas gutter on all four sides, so the pane floats clear
             of the sidebar and the top bar rather than butting into them. */}
-        <main className="min-w-0 flex-1 p-3">
+        <main className={cn('min-w-0 flex-1', handheld ? 'p-2 pt-0' : 'p-3')}>
           <div className="relative h-full">
             <div className="shadow-pane h-full overflow-y-auto rounded-shell bg-surface ring-1 ring-hairline/70">
-              <div className="mx-auto max-w-[1400px] px-8 py-7">{children}</div>
+              {/* The room won back from the rail belongs to the table, not to
+                  the margins either side of it. */}
+              <div className="mx-auto max-w-[1400px] px-4 py-5 md:px-8 md:py-7">{children}</div>
             </div>
 
             {/* Outside the scroll container so docked bars stay put. It must

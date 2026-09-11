@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { usePersistentState } from './usePersistentState'
+import { useMediaQuery } from './useMediaQuery'
 
 /* The two pieces of chrome that have to negotiate over the same horizontal
    room: the nav rail on the left and the detail column on the right. A page
@@ -10,6 +11,8 @@ import { usePersistentState } from './usePersistentState'
 interface ShellState {
   sidebarCollapsed: boolean
   toggleSidebar: () => void
+  /** No room alongside the page for standing chrome. The rail becomes a menu. */
+  handheld: boolean
   /** The element the detail column renders into, once the shell has painted. */
   dockHost: HTMLElement | null
   setDockHost: (element: HTMLElement | null) => void
@@ -36,6 +39,11 @@ export function ShellProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => setOverride(null), [dockOpen])
 
+  /* Below this the rail cannot be afforded at any width. Even folded to icons
+     it takes a tenth of the screen to say three words that are one tap away in
+     a menu, and the page it is standing beside is a table. */
+  const handheld = useMediaQuery('(max-width: 767px)')
+
   const collapsed = override ?? (dockOpen || preference)
 
   const toggleSidebar = useCallback(() => {
@@ -51,12 +59,13 @@ export function ShellProvider({ children }: { children: ReactNode }) {
     () => ({
       sidebarCollapsed: collapsed,
       toggleSidebar,
+      handheld,
       dockHost,
       setDockHost,
       dockOpen,
       setDockOpen,
     }),
-    [collapsed, toggleSidebar, dockHost, dockOpen],
+    [collapsed, toggleSidebar, handheld, dockHost, dockOpen],
   )
 
   return <ShellContext.Provider value={value}>{children}</ShellContext.Provider>

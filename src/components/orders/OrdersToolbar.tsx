@@ -152,10 +152,14 @@ export function OrdersToolbar({
   const clear = () => onChange(NO_FILTERS)
 
   return (
-    // The header band below is a shape of its own now rather than a line of
-    // labels, so it needs clearing from the rule under the tabs — at 16px the
-    // two were reading as one stacked control.
-    <div className="mb-6">
+    /* The header band below is a shape of its own now rather than a line of
+       labels, so it needs clearing from the rule under the tabs — at 16px the
+       two were reading as one stacked control.
+
+       Also the measuring stick for the tabs inside it, which fall back to a menu
+       when this row runs short. That is a question about the room left on the
+       page, not about the size of the window. */
+    <div className="@container mb-6">
       {/* Runs the width of the table rather than the width of the pane. The
           rule is the top edge of the list, so it starts and stops where the
           list does — the negative margin matches the table's own. */}
@@ -226,7 +230,10 @@ export function OrdersToolbar({
             <div
               id="order-filters"
               className={cn(
-                'flex flex-wrap items-center gap-2 pt-3',
+                // Matches the 24px the toolbar already leaves beneath itself, so
+                // the row sits centred in its band rather than tucked under the
+                // rule with all the air below it.
+                'flex flex-wrap items-center gap-2 pt-6',
                 closing
                   ? // `forwards`, so the row holds its last frame instead of
                     // flashing back to full for the tick before it unmounts.
