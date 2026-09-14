@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { Menu } from '@/components/ui/Menu'
 import { LANES } from '@/lib/derive'
@@ -26,6 +27,41 @@ export function StageTabs({
   onChange: (lane: LaneId) => void
 }) {
   const current = LANES.find((lane) => lane.id === active) ?? LANES[0]!
+
+  const listRef = useRef<HTMLDivElement>(null)
+  const [marker, setMarker] = useState<{ left: number; width: number } | null>(null)
+
+  /* One underline that travels rather than six that take turns switching on.
+     Fading one out while another fades in leaves a beat with no answer to
+     "which stage am I in", and the two places are unrelated on screen — the
+     line sliding between them is what makes the move one movement.
+
+     Measured rather than declared, because the tabs are sized by their own
+     labels and counts. Watched as well as measured: the counts change under it
+     as orders move, a stage going from 86 to 100 widens its tab, and every tab
+     after it shifts along. */
+  useLayoutEffect(() => {
+    const list = listRef.current
+    if (!list) return
+
+    const measure = () => {
+      const tab = list.querySelector<HTMLElement>('[aria-selected="true"]')
+      // Nothing to measure while the row is behind its container query.
+      if (!tab || tab.offsetWidth === 0) return
+
+      const next = { left: tab.offsetLeft, width: tab.offsetWidth }
+      setMarker((prev) =>
+        prev && prev.left === next.left && prev.width === next.width ? prev : next,
+      )
+    }
+
+    measure()
+
+    const observer = new ResizeObserver(measure)
+    observer.observe(list)
+    for (const tab of list.querySelectorAll('[role="tab"]')) observer.observe(tab)
+    return () => observer.disconnect()
+  }, [active])
 
   return (
     <>
@@ -67,9 +103,10 @@ export function StageTabs({
       </div>
 
       <div
+        ref={listRef}
         role="tablist"
         aria-label="Fulfillment stage"
-        className="hidden min-w-0 gap-1 @min-[820px]:flex"
+        className="relative hidden min-w-0 gap-1 @min-[820px]:flex"
       >
         {LANES.map((lane) => {
           const isActive = lane.id === active
@@ -108,18 +145,25 @@ export function StageTabs({
                 {counts[lane.id]}
               </span>
 
-              {/* Sits on the rule under the row rather than above it, so the
-                  stage you are in reads as a break in the line. */}
+              {/* The hover hint only. The line under the selected stage is one
+                  element for the whole row, below, so that it can travel. */}
               <span
                 aria-hidden
-                className={cn(
-                  'absolute inset-x-0 bottom-0 h-[3px] rounded-full transition-colors',
-                  isActive ? 'bg-brand' : 'bg-transparent group-hover:bg-hairline',
-                )}
+                className="absolute inset-x-0 bottom-0 h-[3px] rounded-full bg-transparent transition-colors group-hover:bg-hairline"
               />
             </button>
           )
         })}
+
+        {/* Sits on the rule under the row rather than above it, so the stage you
+            are in reads as a break in the line. */}
+        {marker && (
+          <span
+            aria-hidden
+            className="absolute bottom-0 left-0 h-[3px] rounded-full bg-brand transition-[translate,width] duration-200 ease-out motion-reduce:transition-none"
+            style={{ translate: `${marker.left}px`, width: marker.width }}
+          />
+        )}
       </div>
     </>
   )

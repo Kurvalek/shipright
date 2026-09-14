@@ -407,24 +407,32 @@ export default function Orders() {
         <StageTabs active={lane} counts={counts} landed={landed} onChange={changeLane} />
       </OrdersToolbar>
 
-      <OrdersTable
-        orders={visible}
-        groups={groups}
-        collapsedGroups={collapsedGroups}
-        onToggleGroup={toggleGroup}
-        users={users}
-        skus={skus}
-        now={now}
-        selected={selected}
-        openId={openId}
-        compact={compactTable}
-        empty={empty}
-        onToggleSelect={toggleSelect}
-        onToggleAll={toggleAll}
-        onOpen={setOpenId}
-        onStatus={moveStatus}
-        onAssign={moveAssign}
-      />
+      {/* Keyed on the stage so the table is a new one, not the old one with
+          different rows in it. Every row, every group and the height of the
+          whole thing change at once when you cross tabs; swapped bare that
+          reads as a flicker with no direction to it. Rising the small distance
+          the underline just travelled gives the swap the same arrival the
+          filter row has, and says the answer is the tab you pressed. */}
+      <div key={lane} className="motion-safe:animate-[rise_180ms_ease-out]">
+        <OrdersTable
+          orders={visible}
+          groups={groups}
+          collapsedGroups={collapsedGroups}
+          onToggleGroup={toggleGroup}
+          users={users}
+          skus={skus}
+          now={now}
+          selected={selected}
+          openId={openId}
+          compact={compactTable}
+          empty={empty}
+          onToggleSelect={toggleSelect}
+          onToggleAll={toggleAll}
+          onOpen={setOpenId}
+          onStatus={moveStatus}
+          onAssign={moveAssign}
+        />
+      </div>
 
       {/* Leaves room for the docked bar so it never covers the last row. */}
       {selectedIds.length > 0 && <div className="h-14" />}
