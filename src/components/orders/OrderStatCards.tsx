@@ -61,69 +61,84 @@ export function OrderStatCards({
   onSelect: (card: Callout) => void
 }) {
   return (
-    <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {cards.map((card) => {
-        const tone = tones[card.tone ?? 'brand']
-        const icon = ICONS[card.icon]
+    /* Three across or three down, and nothing in between. Two columns left the
+       third card alone on a row below, which reads as a card that did not fit
+       rather than the third of three — and the odd one out was Overdue or New
+       depending on the order, so the layout kept promoting a different number.
+       Stacked, they are still a list of three in the same order.
 
-        return (
-          <button
-            key={card.label}
-            type="button"
-            onClick={() => onSelect(card)}
-            className={cn(
-              'group rounded-card border border-hairline bg-surface px-4 py-3.5 text-left',
-              /* A card that lifts says "this is a thing you can pick up" without
-                 tinting the numbers it is holding — the fill it used to take on
-                 hover was the same family as the risk tone on the Overdue card,
-                 so pointing at one changed what it appeared to be saying. */
-              'transition-[transform,box-shadow] duration-150 ease-out',
-              'hover:-translate-y-0.5 hover:shadow-card-hover',
-              /* Tailwind only lets `hover` fire on pointers that can hover, so
-                 on a phone the card would answer a tap with nothing at all.
-                 Pressing lifts it the same way, with a squeeze on top: on a
-                 touchscreen that is the whole gesture, and under a pointer it
-                 is the press against an already-lifted card. */
-              'active:-translate-y-0.5 active:scale-[0.995] active:shadow-card-hover',
-              'active:duration-75',
-              'motion-reduce:transition-none motion-reduce:hover:transform-none motion-reduce:active:transform-none',
-            )}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="label-text">{card.label}</p>
+       The row is asked how much space it has, not the window: the detail pane
+       takes 400px out of this column when a record is open, so a 1280px screen
+       reading a record has less room here than a 900px one that is not.
 
-                {/* No "View" beside the number any more. The whole card has
-                    been the target all along, and a link inside a button gave
-                    the click two names for one destination. The border and
-                    fill still answer the pointer, which is what says it is a
-                    way in. */}
+       660px is what the three need before "Past its ship-by time" starts
+       truncating — the footnote is the widest line in a card, and it is the
+       line that says what the number counts. */
+    <div className="@container mb-5">
+      <div className="grid gap-3 @min-[660px]:grid-cols-3">
+        {cards.map((card) => {
+          const tone = tones[card.tone ?? 'brand']
+          const icon = ICONS[card.icon]
+
+          return (
+            <button
+              key={card.label}
+              type="button"
+              onClick={() => onSelect(card)}
+              className={cn(
+                'group rounded-card border border-hairline bg-surface px-4 py-3.5 text-left',
+                /* A card that lifts says "this is a thing you can pick up" without
+                   tinting the numbers it is holding — the fill it used to take on
+                   hover was the same family as the risk tone on the Overdue card,
+                   so pointing at one changed what it appeared to be saying. */
+                'transition-[transform,box-shadow] duration-150 ease-out',
+                'hover:-translate-y-0.5 hover:shadow-card-hover',
+                /* Tailwind only lets `hover` fire on pointers that can hover, so
+                   on a phone the card would answer a tap with nothing at all.
+                   Pressing lifts it the same way, with a squeeze on top: on a
+                   touchscreen that is the whole gesture, and under a pointer it
+                   is the press against an already-lifted card. */
+                'active:-translate-y-0.5 active:scale-[0.995] active:shadow-card-hover',
+                'active:duration-75',
+                'motion-reduce:transition-none motion-reduce:hover:transform-none motion-reduce:active:transform-none',
+              )}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="label-text">{card.label}</p>
+
+                  {/* No "View" beside the number any more. The whole card has
+                      been the target all along, and a link inside a button gave
+                      the click two names for one destination. The border and
+                      fill still answer the pointer, which is what says it is a
+                      way in. */}
+                  <span
+                    className={cn('display tnum mt-1.5 block text-[26px] leading-none', tone.value)}
+                  >
+                    <CountUp value={card.value} />
+                  </span>
+
+                  <p className="mt-1.5 truncate text-[12px] text-ink-muted">{card.footnote}</p>
+                </div>
+
                 <span
-                  className={cn('display tnum mt-1.5 block text-[26px] leading-none', tone.value)}
+                  className={cn('grid size-11 shrink-0 place-items-center rounded-lg', tone.chip)}
                 >
-                  <CountUp value={card.value} />
+                  <span
+                    aria-hidden
+                    style={{ maskImage: `url(${icon.src})` }}
+                    className={cn(
+                      'block size-7',
+                      icon.animated ? 'sprite motion-safe:group-hover:sprite-run' : 'icon-mask',
+                      tone.ink,
+                    )}
+                  />
                 </span>
-
-                <p className="mt-1.5 truncate text-[12px] text-ink-muted">{card.footnote}</p>
               </div>
-
-              <span
-                className={cn('grid size-11 shrink-0 place-items-center rounded-lg', tone.chip)}
-              >
-                <span
-                  aria-hidden
-                  style={{ maskImage: `url(${icon.src})` }}
-                  className={cn(
-                    'block size-7',
-                    icon.animated ? 'sprite motion-safe:group-hover:sprite-run' : 'icon-mask',
-                    tone.ink,
-                  )}
-                />
-              </span>
-            </div>
-          </button>
-        )
-      })}
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }
