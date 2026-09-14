@@ -1,5 +1,4 @@
 import { useCallback, useMemo, useState } from 'react'
-import { Plus } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { PaneDock } from '@/components/layout/PaneDock'
 import { Button } from '@/components/ui/Button'
@@ -387,14 +386,7 @@ export default function Orders() {
 
   return (
     <>
-      <PageHeader
-        title="Orders"
-        actions={
-          <Button variant="primary" icon={<Plus size={15} />}>
-            New order
-          </Button>
-        }
-      />
+      <PageHeader title="Orders" />
 
       <OrderStatCards cards={callouts} onSelect={openCallout} />
 
